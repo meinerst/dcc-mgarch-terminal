@@ -1,0 +1,246 @@
+/* Application shell: the tab bar and the global footer.
+   Both morph between the document and the desk, so they belong to neither. */
+
+/* ============ Pre-paint view hint ============ */
+/* The client's first render must match the prerendered HTML, which is always the document,
+   so a deep link to #terminal can only switch surfaces in an effect. The inline script in
+   layout.jsx stamps data-view on <html> before paint and this hides the document until the
+   effect runs, so entering the desk by URL never flashes the study first. view.js clears
+   the attribute on that first effect, after which these rules can never match. */
+html[data-view="terminal"] .academic,
+html[data-view="terminal"] .scroll-gate {
+  display: none;
+}
+
+/* ============ Tab bar (persistent, all routes) ============ */
+.tabnav {
+  position: sticky; top: 0; z-index: 1000;
+  height: var(--tabbar-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--ac-border);
+}
+.tabnav-brand {
+  font-family: var(--font-display); font-weight: 600; font-size: 16px;
+  letter-spacing: 0.01em; color: var(--ac-accent); text-decoration: none;
+}
+.tabnav-tabs { position: relative; display: flex; gap: 4px; align-items: center; }
+/* Gliding scroll-spy underline: slides and resizes to the active tab's box as
+   the active section changes. Restrained editorial motion, not a color swap. */
+.tabnav-underline {
+  position: absolute; bottom: -1px; left: 0; height: 2px;
+  background: var(--ac-accent); border-radius: 1px; pointer-events: none;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Opt out of the glide: snap to the active tab, no sliding. */
+  .tabnav-underline { transition: opacity 0.2s ease; }
+}
+.tabnav-tab {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ac-secondary); text-decoration: none;
+  padding: 8px 14px; border-radius: 4px; transition: color 0.15s, background 0.15s;
+}
+.tabnav-tab:hover { color: var(--ac-accent); background: var(--ac-subtle); }
+.tabnav-tab.active { color: var(--ac-accent); background: var(--ac-subtle); }
+/* Badge sits inline beside the label (no absolute overlap on the tab text). A slow,
+   low-amplitude pulse gives it just enough life to read as "clickable / go here"
+   without shouting. Glow tints toward the terminal's blue — the place it links to. */
+.tabnav-badge {
+  flex: none;
+  font-size: 8px; font-weight: 700; letter-spacing: 0.06em; line-height: 1;
+  padding: 2px 4px; border-radius: 3px;
+  background: #64748b; color: #fff;
+  transition: background 0.15s, box-shadow 0.15s;
+  animation: badge-pulse 2.8s ease-in-out infinite;
+}
+/* Hover the tab -> badge brightens to the accent, rewarding the glance. */
+.tabnav-tab:hover .tabnav-badge { background: var(--ac-accent); animation: none; box-shadow: 0 0 8px 1px rgba(37, 99, 235, 0.55); }
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  50% { box-shadow: 0 0 7px 1px rgba(37, 99, 235, 0.5); }
+}
+/* Respect users who opt out of motion — keep it a plain static pill for them. */
+@media (prefers-reduced-motion: reduce) {
+  .tabnav-badge { animation: none; }
+}
+
+/* ============ Narrow bar (phone): two tabs ============ */
+/* Five section tabs plus the terminal do not fit a phone, so below 640px the bar renders
+   one tab for the section you are in and one for the terminal (see TabNav.jsx). The width
+   here MUST match NARROW_MAX_WIDTH in breakpoints.js: the bar is a JS render branch, and
+   a disagreement would style the wide bar while rendering the narrow one.
+
+   Pre-paint hint: the server cannot evaluate a media query, so the first render is always
+   the wide bar. layout.jsx stamps data-narrow before paint and this hides the strip until
+   the effect settles, so six tabs never flash and reflow down to two. view.js clears the
+   attribute on that first effect, after which this rule can never match. */
+html[data-narrow] .tabnav-tabs { visibility: hidden; }
+
+@media (max-width: 640px) {
+  /* Sized to its label, not to the longest one. Reserving room for "Methodology" left a
+     short label like "Abstract" sitting in visible dead space, which read as a gap
+     between the two tabs; the cost of sizing to content is that the terminal tab shifts
+     as the spy moves. The pair stays snug and the slack falls to the left of the strip,
+     where it separates the tabs from the brand. */
+  .tabnav-tab--section {
+    background: none; border: none; cursor: pointer; font: inherit;
+    font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  /* The label swaps while the page is scrolling, so it can retrigger fast. Opacity only:
+     an interrupted crossfade just lands on the new label, where a directional slide would
+     fight the page's own motion and imply an ordering the spy may skip past. */
+  .tabnav-tab-label {
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    animation: tab-label-in 0.15s ease-out;
+  }
+  @keyframes tab-label-in { from { opacity: 0; } to { opacity: 1; } }
+  .tabnav-caret {
+    flex: none; width: 0; height: 0; margin-left: 6px;
+    border-left: 3.5px solid transparent; border-right: 3.5px solid transparent;
+    border-top: 4px solid currentColor;
+    transition: transform 0.18s ease;
+  }
+  .tabnav-tab--section.open .tabnav-caret { transform: rotate(180deg); }
+
+  /* The sheet hangs off the sticky bar, so it is pinned with it and cannot scroll away
+     mid-tap. Full-bleed rather than anchored: at 375px there is no horizontal room worth
+     protecting, and full-width rows give honest 44px targets with no positioning math. */
+  .tabnav-sheet {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 1001;
+    display: flex; flex-direction: column;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--ac-border);
+    box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.25);
+    /* Closed state is not display:none — the rows animate, and a display swap cannot be
+       transitioned. Hidden from pointer and screen readers instead. */
+    opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .tabnav-sheet.open {
+    opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s;
+  }
+  .tabnav-sheet-row {
+    display: flex; align-items: center; min-height: 44px; padding: 0 18px;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ac-secondary); text-decoration: none;
+    border-bottom: 1px solid var(--ac-border);
+  }
+  .tabnav-sheet-row:last-child { border-bottom: none; }
+  .tabnav-sheet-row.active { color: var(--ac-accent); background: var(--ac-subtle); }
+
+  /* Dims the document behind the sheet and catches the tap that closes it. */
+  .tabnav-scrim {
+    position: fixed; top: var(--tabbar-h); left: 0; right: 0; bottom: 0; z-index: 1000;
+    background: rgba(15, 23, 42, 0.28);
+    opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .tabnav-scrim.open {
+    opacity: 1; pointer-events: auto; visibility: visible;
+    transition: opacity 0.18s ease, visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* Opt out of the motion, keep the state changes. */
+    .tabnav-tab-label { animation: none; }
+    .tabnav-caret { transition: none; }
+    .tabnav-sheet { transform: none; transition: opacity 0.01s, visibility 0s linear 0.01s; }
+    .tabnav-sheet.open { transform: none; transition: opacity 0.01s, visibility 0s; }
+    .tabnav-scrim { transition: opacity 0.01s, visibility 0s linear 0.01s; }
+    .tabnav-scrim.open { transition: opacity 0.01s, visibility 0s; }
+  }
+}
+
+/* dark morph on the terminal route */
+.tabnav--terminal {
+  background: var(--color-terminal-sidebar);
+  border-bottom: 2px solid var(--color-terminal-blue);
+  backdrop-filter: none;
+}
+.tabnav--terminal .tabnav-brand {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em; color: #60a5fa;
+}
+.tabnav--terminal .tabnav-tab { font-family: var(--font-mono); color: #94a3b8; }
+.tabnav--terminal .tabnav-tab:hover { color: #fff; background: rgba(37, 99, 235, 0.18); }
+.tabnav--terminal .tabnav-tab.active { color: #fff; background: rgba(37, 99, 235, 0.28); }
+.tabnav--terminal .tabnav-badge { background: #b45309; }
+
+
+/* ============ Global footer, academic variant ============ */
+/* Light and understated, left-aligned, consistent with the academic tokens. Normal
+   flow below the page content (the academic surface scrolls). */
+.site-footer {
+  display: flex; align-items: center;
+  padding: 18px 28px;
+  border-top: 1px solid var(--ac-border);
+  background: var(--ac-bg);
+}
+.site-footer-link {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ac-secondary); text-decoration: none; transition: color 0.15s;
+}
+.site-footer-link:hover { color: var(--ac-accent); }
+
+/* ---- Global footer, terminal variant ---- */
+/* Slim dark strip below the desk, fixed height so the desk's height math holds. Styled
+   to the terminal palette so it reads as part of the dark surface, not the light chrome.
+   Compound selector (.site-footer.site-footer--terminal) so this beats the base
+   .site-footer padding from academic.css regardless of stylesheet import order — the
+   base padding would otherwise inflate the strip past --footer-term-h and page-scroll. */
+.site-footer.site-footer--terminal {
+  height: var(--footer-term-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 16px;
+  background: var(--color-terminal-sidebar);
+  border-top: 1px solid #334155;
+}
+/* Provenance key (see Footer.jsx). Sits opposite the site link in the strip the desk's
+   height math already reserves, so it costs no desk space — the reason it lives here and
+   not in the market-clock bar, which carries LIVE state (clock, speed, pause) and would
+   be the wrong register for a static key. Never wraps: the strip is a fixed 30px and a
+   second line would push the desk into page scroll. Narrow viewports drop whole clauses
+   (see the tiers below) instead of relying on the ellipsis, which is only a last-resort
+   guard — it lives on the inner text span because a flex container cannot ellipsize its
+   own anonymous text children. */
+.footer-legend {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.02em;
+  color: #64748b;
+}
+.footer-legend-text {
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Clause tiers. Breakpoints are where each form stops fitting beside the site link at
+   10px mono, widest clause dropped first. */
+.footer-legend-wide, .footer-legend-mid { display: none; }
+@media (min-width: 640px) {
+  .footer-legend-mid { display: inline; }
+  .footer-legend-narrow { display: none; }
+}
+@media (min-width: 1100px) { .footer-legend-wide { display: inline; } }
+/* Swatch uses the tint the panels use, outlined so it stays visible on the dark strip. */
+.footer-legend-swatch {
+  flex: none; width: 9px; height: 9px; border-radius: 2px;
+  background: var(--color-terminal-model-bg);
+  border: 1px solid var(--color-terminal-model);
+}
+/* flex: none + nowrap so the link keeps its one line: the strip is a fixed 30px, and
+   letting it wrap to "MODELKIT.STUDIO ©" / "2026" overflowed it. */
+.site-footer--terminal .site-footer-link {
+  flex: none; white-space: nowrap;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #64748b; text-decoration: none; transition: color 0.15s;
+}
+.site-footer--terminal .site-footer-link:hover { color: #93c5fd; }
+

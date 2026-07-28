@@ -1,0 +1,362 @@
+/* Academic document styles. Owned by features/academic.
+   Loaded last, so its thesis-viewer overrides win over the shared modal primitives. */
+
+/* Density target: "moderate compression" — noticeably tighter than a landing page
+   (titles 64->44, body 18->16, line-height 1.8->1.6, section pad 40->24) so the page
+   reads as a paper. Titles use IBM Plex Serif (--font-display); body and data are the
+   sans and mono of the same superfamily. */
+
+:root {
+  --ac-bg: #ffffff;
+  --ac-text: #1a1a1a;
+  --ac-secondary: #5a5f66;
+  --ac-accent: #0f172a;
+  --ac-border: #e7e9ec;
+  --ac-subtle: #f7f8fa;
+  --ac-blue: #2563eb;
+  --ac-amber-bg: #fef9ec;
+  --ac-amber-border: #f2d894;
+  --ac-amber-text: #92640a;
+  --ac-green: #0f7a4d;
+  --ac-red: #c02b2b;
+  --ac-maxw: 940px;
+  --ac-prose: 760px;
+}
+
+/* ============ Academic page shell ============ */
+.academic {
+  background: var(--ac-bg); color: var(--ac-text);
+  font-family: var(--font-sans); font-weight: 400; line-height: 1.6;
+  min-height: calc(100vh - var(--tabbar-h));
+}
+.academic-inner { max-width: var(--ac-maxw); margin: 0 auto; padding: 44px 28px 96px; }
+
+/* Single-page sections. scroll-margin-top keeps each section's top clear of the
+   sticky tab bar on anchored/deep-link scrolls. Sections after the first carry a top rule
+   and extra lead-in so the merged page reads as distinct, separated parts. */
+.academic .ac-section { scroll-margin-top: calc(var(--tabbar-h) + 8px); }
+.academic .ac-section + .ac-section { margin-top: 8px; padding-top: 44px; border-top: 1px solid var(--ac-border); }
+.academic .ac-section-title { font-size: 34px; font-weight: 600; line-height: 1.15; letter-spacing: -0.012em; margin: 0 0 16px; }
+
+.academic h1, .academic h2, .academic h3 { font-family: var(--font-display); color: var(--ac-accent); }
+.academic h1 { font-size: 44px; font-weight: 600; line-height: 1.12; letter-spacing: -0.015em; margin-bottom: 16px; }
+.academic h2 { font-size: 30px; font-weight: 600; line-height: 1.18; margin: 0 0 18px; }
+.academic h3 { font-size: 21px; font-weight: 600; line-height: 1.25; margin: 28px 0 10px; }
+.academic p { font-size: 16px; line-height: 1.6; color: var(--ac-secondary); margin-bottom: 14px; max-width: var(--ac-prose); }
+.academic .lead { font-size: 20px; font-weight: 300; line-height: 1.5; color: #3b4048; max-width: 820px; margin-bottom: 20px; }
+.academic strong { color: var(--ac-accent); font-weight: 600; }
+.academic .eyebrow {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.14em; color: var(--ac-blue); margin-bottom: 12px;
+}
+.academic .section { padding: 24px 0; }
+.academic .divider { height: 1px; max-width: var(--ac-prose); background: var(--ac-border); margin: 28px 0; }
+/* Inline identifiers (flag names) are long unbreakable tokens; let them break rather
+   than set a minimum width no narrow viewport can satisfy. */
+.academic code { font-family: var(--font-mono); font-size: 0.92em; overflow-wrap: anywhere; }
+
+/* ============ The one device: the numbered table ============ */
+/* The page has exactly one decorative device, and this is it. A paper has tables and
+   equations; stat tiles, status pills and bordered cards are packaging, so there are
+   none. The terminal call to action and the tab-bar chrome are the deliberate
+   exception — the link to the desk is the one thing this page sells.
+
+   There is likewise no generic indented note. An indent carries no inferable meaning
+   when it is doing four unrelated jobs at once, so a table instruction is an
+   `.ac-table-note` physically attached to its table, and anything substantive is
+   ordinary body prose: a caveat that matters should not be set in small grey type. */
+
+/* equations — display, centred, numbered at the right margin. No fill, no border:
+   an equation is typography, not a box. */
+.ac-eq { position: relative; margin: 22px 0; padding: 2px 46px 2px 0; max-width: var(--ac-prose); text-align: center; }
+.ac-eq .eq { font-family: var(--font-display); font-style: italic; font-size: 19px; color: var(--ac-text); line-height: 1.7; }
+.ac-eq .eq-num { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-family: var(--font-mono); font-size: 12px; color: var(--ac-secondary); }
+.ac-eq .eq-label { font-size: 13px; color: var(--ac-secondary); margin-top: 8px; line-height: 1.5; }
+
+/* ============ Data tables (academic) ============ */
+/* Booktabs rules: a heavy rule above the header and below the body, a hairline under
+   the header, nothing else. No fills, no borders around the block, no zebra. */
+.ac-fig { margin: 22px 0; }
+.ac-fig-cap { font-size: 13.5px; line-height: 1.5; color: var(--ac-secondary); margin-bottom: 8px; max-width: var(--ac-prose); }
+.ac-fig-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ac-text); margin-right: 7px; }
+/* The wrap is the ONLY thing allowed to scroll sideways — the page body never does.
+   `overscroll-behavior-x: contain` stops a horizontal drag that reaches the end of a
+   table from turning into the browser's back-swipe gesture on touch.
+   Capped to the prose measure so a table's right edge lines up with every paragraph
+   instead of overhanging it by the 124px the page shell is wider than the text column. */
+.ac-table-wrap {
+  max-width: var(--ac-prose);
+  overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  /* Scroll cues. Two layers per side: an opaque cover attached `local` (so it travels
+     with the content and parks at the content's own edge) painted over a shading cue
+     attached `scroll` (pinned to the container's edge). The cue is therefore visible
+     only while there is more table in that direction, and clears itself at the end.
+     No JS, no scroll listener. The cover's opaque stop (60% of 40px = 24px) is kept wider
+     than the cue (22px) so no sliver of shading survives once the scroll reaches an end. */
+  background:
+    linear-gradient(to right, var(--ac-bg) 60%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--ac-bg) 60%, rgba(255, 255, 255, 0)) right center,
+    linear-gradient(to right, rgba(15, 23, 42, 0.11), rgba(15, 23, 42, 0)) left center,
+    linear-gradient(to left, rgba(15, 23, 42, 0.11), rgba(15, 23, 42, 0)) right center;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 22px 100%, 22px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+/* Fill the container, so a table's left and right edges line up with the prose measure
+   (or the full page measure under `--wide`) rather than stopping short of it. Columns
+   share the slack; the wrap still scrolls when min-content exceeds the measure. */
+.ac-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 12.5px; }
+.ac-table th {
+  text-align: left; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--ac-text); background: none;
+  border-top: 1.5px solid var(--ac-text); border-bottom: 1px solid var(--ac-border); white-space: nowrap;
+}
+.ac-table td { padding: 7px 12px; border-bottom: 1px solid var(--ac-border); white-space: nowrap; }
+.ac-table tbody tr:last-child td { border-bottom: 1.5px solid var(--ac-text); }
+.ac-table td.num, .ac-table th.num { text-align: right; }
+/* A header far wider than the data under it sets its column's width for no benefit
+   ("CHRISTOFFERSEN" over four `reject` cells). This lets that one label break across two
+   lines so the column sizes to its values instead. Opt-in per header, so numeric
+   scoreboards keep their single-line headers by default. */
+.ac-table th.brk { white-space: normal; }
+/* wrap variant: prose-heavy tables (the ledger) let cells break so no column is
+   pushed off-screen. Numeric scoreboards keep the default nowrap. */
+.ac-table.wrap td, .ac-table.wrap th { white-space: normal; }
+.ac-table.wrap .col-sec { width: 34px; }
+/* Verdicts are text only, no red/green — a sober table, not a scoreboard. */
+.ac-table .pass { color: var(--ac-secondary); font-weight: 400; }
+.ac-table .fail { color: var(--ac-text); font-weight: 600; }
+.ac-table .muted { color: var(--ac-secondary); }
+
+/* Table footnote — the replacement for the old indented note. Sits directly under the
+   table's bottom rule in the caption's own type, so caption + table + note read as one
+   block and nothing has to signal the association. Capped to the prose measure even
+   under the wide table, since a footnote is read as prose and 884px is past comfortable. */
+/* Scoped under .academic so it outranks `.academic p`, which the footnote element is. */
+.academic .ac-table-note {
+  font-size: 13.5px; line-height: 1.5; color: var(--ac-secondary);
+  margin: 8px 0 0; max-width: var(--ac-prose);
+}
+.ac-table-note-label { font-style: italic; color: var(--ac-text); }
+
+/* ============ Terminal CTA + diamond-shine shimmer ============ */
+/* Centered CTA card: title, description, then a single centered button, carrying the
+   diamond-shine sweep. The one deliberately promotional element on the page. */
+/* Capped to the prose measure like every other block: the container is 124px wider than
+   the text column, so an uncapped card overhangs the paragraph above it on both sides. */
+.ac-cta { max-width: var(--ac-prose); background: linear-gradient(135deg, rgba(15,23,42,0.03), rgba(37,99,235,0.05)); border: 1px solid rgba(15,23,42,0.1); border-radius: 8px; padding: 26px 24px; margin: 28px 0; text-align: center; }
+.ac-cta-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ac-accent); margin-bottom: 8px; }
+.ac-cta-desc { font-size: 15px; line-height: 1.6; color: var(--ac-secondary); max-width: 560px; margin: 0 auto 18px; }
+/* The sweep is clipped by `overflow: hidden`, so the label and the arrow must never be
+   allowed to reach that clip edge. Both are flex items: `flex: 0 0 auto` stops either
+   from being shrunk below its own text width when the pill is narrower than its
+   content, which is what pushed the glyphs into the padding and under the clip. */
+.ac-cta-btn {
+  position: relative; overflow: hidden;              /* clip the sweep */
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  max-width: 100%;
+  padding: 13px 28px; border-radius: 5px;
+  background: var(--ac-accent); color: #fff; text-decoration: none;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  white-space: nowrap; transition: transform 0.15s, box-shadow 0.15s;
+}
+.ac-cta-btn > * { flex: 0 0 auto; }
+.ac-cta-btn::after { content: "→"; flex: 0 0 auto; }
+.ac-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,0.2); }
+
+/* ---- Document line (source artifact, opens the thesis modal) ---- */
+/* Full-width hairline-ruled row under the lead. Deliberately NOT a button: the source
+   document is context for the prose that follows, so it carries the weight of a caption
+   and only the trailing action word picks up the accent. */
+/* The action sits directly after the label, not pushed to the far edge: at the page's
+   measure a space-between row stranded "Read" a column away from the thing it opens. */
+.ac-docline {
+  display: flex; align-items: baseline; justify-content: flex-start; gap: 14px;
+  width: 100%; max-width: var(--ac-prose); margin: 22px 0 4px; padding: 11px 2px;
+  border: none; border-top: 1px solid var(--ac-border);
+  border-bottom: 1px solid var(--ac-border);
+  background: none; font-family: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ac-docline-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ac-secondary); transition: color 0.15s;
+}
+.ac-docline-action {
+  flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ac-blue);
+}
+.ac-docline-action::after { content: " ↗"; }
+.ac-docline:hover { border-color: rgba(15,23,42,0.28); }
+.ac-docline:hover .ac-docline-label { color: var(--ac-text); }
+
+/* Diamond-shine: diagonal light sweep, -100% -> 300%, skew -15deg, 4s ease-in-out,
+   fades in at 10% / out at 90%. Ported from the reference project's spec. */
+.animate-diamond-shine::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.08) 75%,
+    transparent 100%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  animation: diamond-shine 4s ease-in-out infinite;
+}
+@keyframes diamond-shine {
+  0%   { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-diamond-shine::before { animation: none; opacity: 0; }
+}
+
+/* ============ Sustained-scroll gateway into the terminal ============ */
+/* A strip at the viewport bottom, revealed only while the reader is at the page bottom and
+   continuing to scroll down. The fill tracks accumulated intent; at 100% ScrollToTerminal
+   routes to /terminal. Pointer-events off so it never intercepts clicks on the CTA beneath
+   it. Hidden entirely under reduced motion (no component).
+
+   STICKY, not fixed. The gate is only ever visible when `atBottom()` is true, and at the
+   page bottom the footer is exactly what occupies the viewport bottom — so a fixed strip
+   did not sometimes collide with the footer, it always did. Sticky pins it to the viewport
+   through the scroll and then lets it settle in flow at the end: it is the last child of
+   `<main class="academic">` and the footer is main's SIBLING, so where it settles is
+   directly above the footer, with no height variable to keep in sync.
+
+   Sticky reserves its flow space whether or not it is visible, which is the point — that
+   reservation is what the footer is no longer standing in. Reserving it only while visible
+   would change `document.scrollHeight` mid-gesture, and scrollHeight is the exact quantity
+   `atBottom()` tests: the gate would cancel itself the instant it appeared. */
+.scroll-gate {
+  position: sticky; bottom: 0; z-index: 40;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(15,23,42,0.10), rgba(15,23,42,0));
+  pointer-events: none;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease; /* slow fade-out after the hold */
+}
+.scroll-gate.visible {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.18s ease, transform 0.18s ease; /* quick fade-in */
+}
+.scroll-gate-label {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ac-secondary);
+}
+.scroll-gate-track {
+  width: min(320px, 60vw); height: 4px; border-radius: 999px;
+  background: var(--ac-border); overflow: hidden;
+}
+.scroll-gate-fill {
+  height: 100%; border-radius: 999px; background: var(--ac-blue);
+  transition: width 0.08s linear;
+}
+
+
+/* ============ Thesis modal ============ */
+/* Reuses .modal-backdrop / .modal-box from globals.css and overrides only what a
+   document viewer needs: it must clear the sticky tab bar (z-index 1000) and it is
+   sized to a page, not to the 460px notice box the terminal's end-of-run modal uses. */
+.thesis-backdrop { z-index: 1100; padding: 20px; }
+.thesis-box {
+  max-width: min(1080px, 94vw); width: 100%;
+  height: min(88vh, 1000px); display: flex; flex-direction: column; padding: 0;
+  border-color: var(--ac-border); border-radius: 8px; overflow: hidden;
+}
+.thesis-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 16px 18px; border-bottom: 1px solid var(--ac-border); background: var(--ac-subtle);
+}
+.thesis-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ac-secondary); margin-bottom: 4px;
+}
+.thesis-title {
+  font-family: var(--font-display); font-size: 17px; font-weight: 600;
+  color: var(--ac-accent); line-height: 1.3;
+}
+.thesis-head-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.thesis-download {
+  display: inline-block; padding: 9px 16px; border-radius: 5px;
+  background: var(--ac-accent); color: #fff; text-decoration: none;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.thesis-download:hover { background: #1e293b; }
+.thesis-close {
+  background: none; border: none; font-size: 16px; line-height: 1; cursor: pointer;
+  color: var(--ac-secondary); padding: 4px;
+}
+.thesis-close:hover { color: var(--ac-accent); }
+/* The viewer owns all remaining height; the box itself never scrolls. */
+.thesis-frame { flex: 1 1 auto; width: 100%; border: none; background: var(--ac-subtle); }
+.thesis-fallback {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start;
+  gap: 14px; padding: 20px 18px; font-size: 15px; line-height: 1.6; color: var(--ac-secondary);
+}
+
+@media (max-width: 640px) {
+  .thesis-box { height: auto; }
+  .thesis-head { flex-direction: column; }
+  .academic h1 { font-size: 34px; }
+  .academic h2 { font-size: 25px; }
+  .academic .ac-section-title { font-size: 28px; }
+  .academic .ac-section + .ac-section { padding-top: 32px; }
+  /* The five tabs cannot fit 375px, so at this width the bar renders two instead — the
+     section you are in, and the terminal (see shell.css). They fit, so the strip needs no
+     horizontal scroll; it must not have one either, since the section sheet is positioned
+     against the bar and an overflow box would clip it. */
+  .tabnav { padding: 0 12px; gap: 10px; }
+  .tabnav-tabs { min-width: 0; flex: 1 1 auto; justify-content: flex-end; }
+  .tabnav-tab { flex: none; padding: 8px 9px; letter-spacing: 0.05em; white-space: nowrap; }
+
+  /* --- pre-launch mobile pass --- */
+  /* Reclaim 20px of horizontal room for the wide result tables. */
+  .academic-inner { padding: 32px 18px 76px; }
+  .academic .lead { font-size: 17px; }
+  .academic h3 { font-size: 19px; }
+  /* Tap targets: the tab strip is the primary navigation, so the hit box fills the bar
+     (46px) rather than the 33px the text alone occupies. */
+  .tabnav-tab { min-height: 40px; }
+  /* Sit the underline inside the strip rather than on the bar's border, so it reads as
+     belonging to the tab at a width where the two are only a few pixels apart. */
+  .tabnav-underline { bottom: 0; }
+  /* The right-margin equation number has nowhere to sit at 375px; drop it under the
+     equation instead of reserving a gutter the line cannot spare. */
+  .ac-eq { padding: 2px 0; }
+  .ac-eq .eq { font-size: 17px; }
+  .ac-eq .eq-num { position: static; display: block; transform: none; margin-top: 6px; }
+  .ac-cta { padding: 22px 16px; }
+  .ac-cta-title { font-size: 19px; }
+  .ac-cta-btn { padding: 13px 20px; white-space: normal; }
+  /* The label's letter-spaced caps do not fit beside the action word at 375px. */
+  .ac-docline { flex-wrap: wrap; gap: 6px; }
+  /* The ledger's two-line cells get unreadably narrow if the fixed section column also
+     has to hold; let it size to content instead. */
+  .ac-table.wrap .col-sec { width: auto; }
+  /* Every table is wider than a 339px content strip, so they all scroll sideways here.
+     Pin the row-label column so the numbers slide under it and the reader never loses
+     which row they are on. Cells are transparent by default, so the pinned column needs
+     an opaque fill; and with `border-collapse: collapse` the collapsed borders do not
+     travel with a sticky cell, so they are redrawn as shadows (right divider + the
+     header's heavy top rule + the body's hairlines + the last row's heavy bottom rule). */
+  .ac-table th:first-child, .ac-table td:first-child {
+    position: sticky; left: 0; z-index: 1; background: var(--ac-bg);
+    box-shadow: 1px 0 0 var(--ac-border), inset 0 -1px 0 var(--ac-border);
+  }
+  .ac-table th:first-child {
+    box-shadow: 1px 0 0 var(--ac-border), inset 0 1.5px 0 var(--ac-text),
+                inset 0 -1px 0 var(--ac-border);
+  }
+  .ac-table tbody tr:last-child td:first-child {
+    box-shadow: 1px 0 0 var(--ac-border), inset 0 -1.5px 0 var(--ac-text);
+  }
+  .academic .ac-table-note { font-size: 13px; }
+  .site-footer { padding: 16px 18px; }
+}

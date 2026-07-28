@@ -1,0 +1,48 @@
+/* Modal primitives — a shared UI element, deliberately owned by neither feature.
+   The desk's end-of-run notice and the document's thesis viewer are both built from
+   these, so they live at the foundation rather than inside whichever feature happened to
+   need them first. Loaded BEFORE either feature, so each can override what it needs. */
+
+/* Plain, academic-terminal styling: no animation, no blur, no frills. */
+/* `dvh` on top of `inset: 0`, not instead of it: on a phone the layout viewport a fixed box
+   is sized against is the URL-bar-hidden one, so a backdrop that trusts `inset: 0` alone is
+   taller than what is actually on screen — it centres its box against a height the reader
+   cannot see, and a bounded modal's footer lands under the browser chrome. `100dvh` is the
+   VISIBLE height; browsers without it fall back to the inset. */
+.modal-backdrop {
+  position: fixed; inset: 0; height: 100dvh; z-index: 50; display: flex; align-items: center;
+  justify-content: center; background: rgba(15, 23, 42, 0.45); padding: 24px;
+}
+.modal-box {
+  position: relative; background: #fff; border: 2px solid var(--color-terminal-border);
+  max-width: 460px; width: 100%; padding: 22px 24px;
+}
+.modal-close {
+  position: absolute; top: 8px; right: 10px; background: none; border: none;
+  font-size: 16px; line-height: 1; cursor: pointer; color: var(--color-terminal-secondary);
+}
+.modal-close:hover { color: var(--color-terminal-text); }
+/* Mono, like every other uppercase LABEL in the terminal chrome (`.modal-action` in this
+   same box, `.replay-badge`, `.order-head`, `.panel-inert-label`). The desk's rule is
+   chrome = mono / prose = sans — `.th-tooltip` sets the prose precedent — and this title
+   was the one label still inheriting the body sans, so a mono button sat under a sans
+   heading inside one modal. */
+.modal-title {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid var(--color-terminal-border); padding-bottom: 8px; margin-bottom: 12px;
+}
+.modal-body { font-size: 13px; line-height: 1.55; color: var(--color-terminal-text); }
+
+.modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-action {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  padding: 7px 14px; border: 2px solid var(--color-terminal-border); background: #f8fafc;
+  cursor: pointer;
+}
+.modal-action:hover { background: #eef2f7; }
+/* The one action that advances the run, same green the clock bar's PLAY/START uses so the
+   two read as the same control wherever the reader meets it. */
+.modal-action.primary { background: #22c55e; border-color: #16a34a; color: #052e16; }
+.modal-action.primary:hover { background: #4ade80; }
+

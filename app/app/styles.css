@@ -1,0 +1,27 @@
+/* The stylesheet graph, in cascade order.
+ *
+ * Order is load-bearing, not alphabetical:
+ *   tokens    the reset and the custom properties everything else reads
+ *   modal     shared primitives, so either feature can override them below
+ *   shell     the chrome that morphs between the two surfaces
+ *   terminal  the desk
+ *   academic  the document, last, because its thesis viewer overrides the shared modal
+ *
+ * Each feature's sheet is imported only here. A feature never imports another's styles,
+ * and every selector inside one is prefixed for its owner (`terminal-`, `ac-`), so a rule
+ * added on one surface cannot reach the other.
+ */
+@import "../styles/tokens.css";
+@import "../styles/modal.css";
+@import "../shell/shell.css";
+@import "../features/terminal/terminal.css";
+@import "../features/academic/academic.css";
+
+/* The redirect left behind at the desk's former address. */
+.redirect-note {
+  max-width: 640px;
+  margin: 80px auto;
+  padding: 0 24px;
+  font-size: 15px;
+  color: var(--ac-secondary);
+}

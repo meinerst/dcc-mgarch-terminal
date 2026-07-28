@@ -1,0 +1,868 @@
+/* Terminal styles. Owned by features/terminal — nothing outside it uses these.
+   Loaded after the shared foundations and before the academic sheet, which is what lets
+   the thesis viewer override the shared modal primitives. */
+
+/* ---- Desk layout ---- */
+/* The desk takes the viewport minus the two pieces of chrome around it: tab bar + desk +
+   footer == 100vh, so the terminal itself never page-scrolls. */
+.terminal-shell {
+  display: grid; grid-template-columns: 240px 1fr;
+  height: calc(100vh - var(--tabbar-h) - var(--footer-term-h)); overflow: hidden;
+}
+/* The right-hand side: a fixed clock bar over a scrolling desk. */
+.terminal-main {
+  display: flex; flex-direction: column;
+  height: 100%; overflow: hidden;
+}
+/* The desk's frame: the same box the reader sees as "the terminal", but one that does NOT
+   scroll. It exists so the gate has something to be pinned to — an overlay inside the
+   scroll box below would ride the skeleton up and off screen. It also carries the desk's
+   width cap, so the gate centres on the desk the reader is looking at rather than on
+   empty gutter at 2560px. */
+.terminal-canvas {
+  position: relative; flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 1600px;
+}
+
+.terminal-sidebar {
+  background: var(--color-terminal-sidebar);
+  color: #cbd5e1;
+  overflow-y: auto;
+  border-right: 1px solid #334155;
+}
+.terminal-clock-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px; border-bottom: 1px solid #334155;
+  background: var(--color-terminal-sidebar);
+}
+.terminal-section { border-bottom: 1px solid #334155; }
+.terminal-section-title {
+  /* A touch clearer than the menu items without shouting (requested "not much"):
+     brighter slate + a hair more tracking, same size/weight/background. */
+  padding: 12px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: #cbd5e1; background: #1e293b;
+}
+.terminal-menu { list-style: none; }
+/* No per-item dividers: only the three .terminal-section borders separate Sample /
+   Scenario / Model, so menu items sit flush inside a section. */
+.terminal-menu button {
+  display: block; width: 100%; text-align: left; padding: 10px 16px;
+  color: #cbd5e1; font-size: 12px; font-family: var(--font-mono);
+  background: none; border: none; cursor: pointer;
+}
+/* Subset window shown under the selected scenario label. */
+.terminal-menu-sub {
+  display: block; margin-top: 4px; font-size: 10px; color: #93c5fd;
+  letter-spacing: 0.02em;
+}
+.terminal-menu button.active .terminal-menu-sub { color: #bfdbfe; }
+/* Neutral caption variant (Sample item): a muted sub-line, not the blue selection
+   echo the Scenario subset uses — this line is descriptive, not a live selection. */
+.terminal-menu-sub--muted { color: #94a3b8; }
+/* Only Scenario items are actionable. Sample/Model are `disabled` captions, so they get
+   no hover affordance and no pointer cursor — nothing there responds to a click. */
+.terminal-menu button:not(:disabled):hover { background: #334155; }
+.terminal-menu button:disabled { cursor: default; }
+.terminal-menu button.active {
+  background: #1e40af; color: #fff; border-left: 3px solid #3b82f6;
+}
+
+.terminal-content-area { flex: 1; min-height: 0; padding: 16px; overflow-y: auto; }
+
+/* ---- Panels ---- */
+.terminal-panel { background: #fff; border: 2px solid var(--color-terminal-border); margin-bottom: 16px; }
+/* Title and note share one line while they fit; when the panel is too narrow the note drops
+   to its own line under the title. `space-between` puts it right of the title on a shared
+   line and at the start of the wrapped line, so stacking reads as a subtitle. Row gap stays
+   tight (2px) so the wrapped header does not grow a band's worth of height. */
+.terminal-panel-header {
+  background: #f8fafc; padding: 10px 16px; border-bottom: 2px solid var(--color-terminal-border);
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2px 12px;
+}
+/* Title never shrinks — the note leaves the line first. */
+.terminal-panel-title {
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  flex: none;
+}
+/* `flex: none` + `nowrap` is what forces the wrap: the note cannot be squeezed below its own
+   text width, so it moves down instead of truncating. Ellipsis is the last resort for a note
+   wider than the whole panel, where even its own line is not enough. */
+.terminal-panel-note {
+  font-size: 11px; color: var(--color-terminal-secondary); font-family: var(--font-mono);
+  flex: none; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.terminal-panel-content { padding: 16px; }
+
+/* Model provenance. A purple header band groups the panels that carry MODEL OUTPUT
+   (VaR, correlation, fitted params) apart from the ones that are pure book arithmetic
+   (order flow, positions, gross exposure). The band is chrome only; no value inside the
+   panel is recolored, so purple never competes with the green/red/amber status axis.
+   Meaning self-decodes from set membership — every purple panel is plainly model-titled —
+   and the footer legend states the convention once in words (Footer.js). The per-panel
+   MODEL chip that used to sit beside each title is gone: it re-explained a global rule on
+   every panel and made the header a 3-up that wrapped in the narrow desk column. */
+.terminal-panel.model { border-color: var(--color-terminal-model-border); }
+.terminal-panel.model .terminal-panel-header {
+  background: var(--color-terminal-model-bg); border-bottom-color: var(--color-terminal-model-border);
+}
+.terminal-panel.model .terminal-panel-title { color: var(--color-terminal-model); }
+/* Metric cards have no header band to tint, so provenance rides on the CARD background.
+   A left stripe was tried and dropped: at 4px it read as a stray marker rather than as
+   provenance, and three stripes in a row fought the panel borders beneath. Tinting the
+   whole card is quieter and matches how model PANELS are marked (a tinted header band),
+   so both surfaces say "model output" the same way — with the same token. */
+.terminal-metric-card.model {
+  background: var(--color-terminal-model-bg);
+  border-color: var(--color-terminal-model-border);
+}
+.terminal-metric-card.model .terminal-metric-label { color: var(--color-terminal-model); }
+
+/* Presentational floor: no landed risk snapshot has priced enough names yet. The panel
+   is visibly dead and inert — NOT a claim that the model needs 3 assets. Positions and
+   the order tape stay live, so the book is seen filling while risk catches up.
+   INERT WINS OVER MODEL (rules below deliberately follow .model): a dead panel is the
+   more urgent signal, and two live color schemes on one header would fight. */
+.terminal-panel.inert { border-color: #cbd5e1; background: #fbfcfd; }
+.terminal-panel.inert .terminal-panel-header { background: #f1f5f9; border-bottom-color: #cbd5e1; }
+.terminal-panel.inert .terminal-panel-title { color: var(--color-terminal-secondary); }
+.terminal-panel.inert .terminal-panel-content { opacity: 0.28; filter: grayscale(1); pointer-events: none; }
+.panel-inert-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em; font-family: var(--font-mono);
+  color: var(--color-terminal-secondary); border: 1px dashed #cbd5e1; padding: 2px 6px;
+}
+.terminal-metric-card.inert { border-color: #cbd5e1; background: #fbfcfd; }
+.terminal-metric-card.inert .terminal-metric-value { color: var(--color-terminal-secondary); }
+/* Inert outranks model (same rule as the panels): a card with no risk snapshot yet drops
+   the tint entirely rather than showing a live-looking model color over a dead value. */
+.terminal-metric-card.model.inert { background: #fbfcfd; border-color: #cbd5e1; }
+.terminal-metric-card.model.inert .terminal-metric-label { color: var(--color-terminal-secondary); }
+
+/* `minmax(0, 1fr)`, not `1fr`: a 1fr track floors at its content's min-content width, so a
+   card holding an unbreakable row (the per-$1k figure beside its chart) stops the track
+   shrinking and pushes the third card off the right of the desk on a narrow desktop. The
+   explicit 0 minimum lets the tracks stay equal and the cards clip their own content. */
+.terminal-grid-3col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+/* ---- Desk columns ----
+   The desk was three paired 2-col grid ROWS, so each row's height was set by its taller
+   panel and the shorter neighbour rendered a block of dead white space. Two INDEPENDENT
+   column stacks remove the row coupling entirely: each column flows on its own height, so
+   a short panel never pads out to match anything. The desk reuses the metric row's OWN
+   3-track definition and spans the book stack across two of them: `2fr 1fr` did not line
+   up, because the 3-card row loses two gaps to the desk's one, drifting the shared edge by
+   gap/3. Identical tracks make the edges line up by construction, not by arithmetic. */
+.terminal-desk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+.terminal-desk > * { min-width: 0; }
+.terminal-desk > :first-child { grid-column: span 2; }
+
+/* Model column: `stretch` above gives it the book column's height (the book column is the
+   taller — it carries three panels), and the LAST panel here grows into whatever that
+   leaves, so both columns end on the same line. Only the last panel flexes; the ones above
+   it keep their natural height.
+
+   The scroll box is ABSOLUTE, and that is the whole trick. Left in flow with `height: auto`
+   it still reported its full content height (a 30-name book = 30 rows) to grid row sizing,
+   so the model column grew to fit its own table and became the row's tallest item — it
+   defined the height it was supposed to fit inside. Out of flow it contributes nothing:
+   the row is sized by the book column alone, the panel takes the slack, and the table fills
+   the panel and scrolls. `inset` reproduces .terminal-panel-content's 16px padding, which
+   is why that padding is dropped here — the absolute box supplies it.
+
+   The floor keeps a --desk-rows box when the book column is the SHORTER one: +32px because
+   box-sizing is border-box, so the content element's min-height must carry its own padding
+   on top of the table reserve. */
+.desk-col-model { display: flex; flex-direction: column; }
+.desk-col-model > :last-child { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.desk-col-model > :last-child .terminal-panel-content {
+  flex: 1 1 auto; position: relative; padding: 0;
+  min-height: calc(var(--tall-h) + 32px);
+}
+.desk-col-model > :last-child .table-scroll.tall { position: absolute; inset: 16px; height: auto; }
+
+/* ---- Metric cards ---- */
+.terminal-metric-card { padding: 16px; border: 2px solid var(--color-terminal-border); background: #fff; }
+/* Two lines are RESERVED whether or not the label needs them. The three labels differ in
+   length ("GROSS EXPOSURE" against "EXPECTED SHORTFALL · 95% · 5 MIN-AHEAD"), so at some
+   desktop widths one wraps and the others do not — and every rule and figure below it in
+   that card then sits a line lower than its neighbours'. Reserving the taller case keeps
+   the row's internal alignment fixed across every width instead of only the widest. */
+.terminal-metric-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--color-terminal-secondary); margin-bottom: 8px; font-weight: 600;
+  line-height: 1.35; min-height: calc(2 * 1.35em);
+}
+/* A Greek letter used as a SYMBOL (α/β/ν/ρ), wrapped by `symbolize` in ui/symbols.jsx.
+   Two things it fixes, both visible in the diagnostics block:
+   - `text-transform: uppercase` on the surrounding label maps α/β/ν to Α/Β/Ν, which read
+     as the Latin A/B/N and so name the wrong parameter;
+   - only the SANS has a greek subset (see layout.js), so a Greek glyph left in a mono or
+     serif run falls back to a system serif at a different size and weight. */
+.sym { text-transform: none; font-family: var(--font-sans); }
+.terminal-metric-value { font-size: 28px; font-weight: 600; line-height: 1; font-family: var(--font-mono); }
+.terminal-metric-value.positive { color: var(--color-terminal-positive); }
+.terminal-metric-value.negative { color: var(--color-terminal-negative); }
+/* 11px, matching `.compute-clock-meta`: a card is one headline figure plus a qualifier,
+   and at 12px against a 28px value the qualifier read as a second statement competing with
+   it. The desk uses this size for every line that qualifies a number rather than being
+   one. */
+.terminal-metric-sub { font-size: 11px; color: var(--color-terminal-secondary); font-family: var(--font-mono); margin-top: 6px; }
+/* Risk per $1,000 of gross, with its own history beside it. The line sits ON the sub row
+   rather than under it: the metric row stands above a desk whose height is the viewport
+   minus the tab bar and footer, so a third stacked element would push the panels below
+   the fold. The chart takes a fixed 96px so the figure never reflows as digits change.
+
+   Separated from the headline dollars by the same 1px rule the Risk Reassessment panel
+   uses between its stacked blocks (`.panel-subhead`): this is a second, different reading
+   of the same fit, and butted straight under a 28px figure it read as that figure's
+   caption. `nowrap` because "$0.78 per $1k gross" broke across two lines once the chart
+   took its share of the row. */
+.metric-rule {
+  padding-top: 10px; margin-top: 10px;
+  border-top: 1px solid var(--color-terminal-border);
+}
+/* Only the two model cards carry a chart; the gross card takes the rule alone, so all
+   three still read as one row. `nowrap` is scoped to these two — the gross card's net line
+   is long enough to need its wrap.
+   The figure gets `min-width: 0` so it may shrink (and ellipsize) rather than widen the
+   grid track, and the chart is `0 1 96px` — 96px when there is room, giving way first when
+   there is not, because a truncated number is worse than a shorter line. */
+.metric-perk {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+/* Figure over unit. Stacked rather than one line because at a narrow desktop width the
+   single line had to give up either digits or the words "of gross" — and the denominator
+   is the whole point of this reading. `nowrap` is scoped to the two stacked lines, so the
+   fallback states (the awaiting note, the Monte-Carlo provenance) still WRAP rather than
+   ellipsize: a clipped sentence is unreadable where a two-line one is merely taller. */
+.metric-perk-figure { display: flex; flex-direction: column; min-width: 0; white-space: nowrap; }
+.metric-perk-value { color: var(--color-terminal-primary); }
+.metric-perk-unit { opacity: 0.8; }
+.metric-perk-fallback { min-width: 0; }
+/* The gross card's two legs, drawn only where there is a column to put them in — the phone
+   layout below. Hidden by default so the desktop card keeps its `Net:` caption unchanged;
+   this is the whole of the mobile/desktop divergence, and it is CSS, not a viewport read in
+   JavaScript. Green is the long leg, red the short one, matching the value colours. */
+.gross-split { display: none; }
+.gross-split-bar {
+  display: flex; height: 6px; margin: 5px 0;
+  background: var(--color-terminal-negative);
+}
+.gross-split-long { background: var(--color-terminal-positive); }
+.metric-perk .chart-hover { flex: 0 1 96px; min-width: 40px; }
+
+/* ---- Data table ---- */
+/* horizontal scroll for the wide positions table (page body never scrolls sideways).
+   `overscroll-behavior-x: contain` keeps a drag past the last column from becoming the
+   browser's back-swipe on touch. */
+.table-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+/* Held book (grows as names are first traded): the viewport is RESERVED at --desk-rows
+   rows from the first render — a fixed height, not a max-height. Under max-height the
+   panel grew a row at a time as names were first traded and the desk reflowed on every
+   new fill; the reserved box holds still and fills in. Past the sixth name the body
+   scrolls inside it. Header row stays sticky. --tall-h is defined at :root. */
+.table-scroll.tall { height: var(--tall-h); overflow-y: auto; }
+.table-scroll.tall thead th { position: sticky; top: 0; z-index: 3; background: #f8fafc; }
+.table-scroll.tall thead th.sticky-col { z-index: 4; }
+.terminal-data-table { width: 100%; border-collapse: collapse; font-size: 13px; font-family: var(--font-mono); }
+.terminal-data-table.sortable th { user-select: none; }
+.terminal-data-table.sortable th:hover { background: #eef2f7; }
+.sort-caret { color: var(--color-terminal-blue); font-size: 9px; }
+.terminal-data-table thead {
+  background: #f8fafc; border-top: 2px solid var(--color-terminal-border);
+  border-bottom: 2px solid var(--color-terminal-border);
+}
+.terminal-data-table th {
+  padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; border-right: 1px solid #e2e8f0;
+  line-height: 20px; /* pinned: --head-h / --row-h above are computed from it */
+}
+.terminal-data-table th:last-child { border-right: none; }
+.terminal-data-table td { padding: 10px 12px; line-height: 20px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; }
+.terminal-data-table td:last-child { border-right: none; }
+.terminal-data-table td.num { text-align: right; }
+.terminal-data-table td.positive { color: var(--color-terminal-positive); font-weight: 600; }
+.terminal-data-table td.negative { color: var(--color-terminal-negative); font-weight: 600; }
+.terminal-data-table td.ticker { font-weight: 600; color: var(--color-terminal-blue); }
+/* DIV. EFFECT pinned to the right edge while the rest scrolls under it; bg tracks row state */
+.terminal-data-table th.sticky-col, .terminal-data-table td.sticky-col { position: sticky; right: 0; border-left: 1px solid #e2e8f0; }
+.terminal-data-table th.sticky-col { background: #f8fafc; z-index: 2; }
+.terminal-data-table td.sticky-col { background: #fff; }
+.terminal-data-table tbody tr.selectable:hover td.sticky-col { background: #f1f5f9; }
+.terminal-data-table tbody tr.selected td.sticky-col { background: #eff6ff; }
+.terminal-data-table tbody tr.selected:hover td.sticky-col { background: #e0edff; }
+
+/* row selection (positions -> spotlight) */
+.terminal-data-table tbody tr.selectable { cursor: pointer; }
+.terminal-data-table tbody tr.selectable:hover { background: #f1f5f9; }
+.terminal-data-table tbody tr.selected { background: #eff6ff; box-shadow: inset 3px 0 0 var(--color-terminal-blue); }
+.terminal-data-table tbody tr.selected:hover { background: #e0edff; }
+
+/* header info tooltip (Div. Effect) */
+.th-info { display: inline-block; margin-left: 4px; color: var(--color-terminal-blue); cursor: help; }
+/* FIXED, not absolute: every desk table sits in a `.table-scroll` overflow box, which
+   clipped an absolutely positioned note on both edges. Fixed positioning is resolved
+   against the viewport, so no ancestor's overflow can cut it. left/top (or bottom) come
+   from ui/InfoTip.jsx, which measures the ⓘ and clamps the box to the viewport — the
+   width here is the ceiling that clamp is computed against. */
+.th-tooltip {
+  position: fixed; z-index: 20; max-width: min(240px, calc(100vw - 16px));
+  padding: 8px 10px; background: var(--color-terminal-sidebar); color: #e2e8f0;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 400; line-height: 1.45;
+  text-transform: none; letter-spacing: normal; border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(15,23,42,.25); white-space: normal;
+  /* It is a note ABOUT the thing under the pointer, never a target itself. */
+  pointer-events: none;
+}
+
+/* One written line per block, so a tip reads as a definition followed by its caveats
+   rather than as a wall. The gap is smaller than a paragraph break — the lines are one
+   note, not separate notes. */
+.th-tooltip-line { display: block; }
+.th-tooltip-line + .th-tooltip-line { margin-top: 6px; }
+
+/* Div. Effect — the one MODEL-driven column in an otherwise book-arithmetic table.
+   The value's own WEIGHT is the magnitude encoding — no bar, no column rule, no header
+   tint. Those three ran at once and made the column a purple slab in which nothing stood
+   out; a bar detached from its number also has to be read twice. Grading the digits
+   instead keeps the table scannable (a trader spots the dark rows without reading any
+   number) while spending the provenance purple exactly once.
+
+   Four steps, not a continuous ramp: adjacent 0.01 differences are noise in a stand-in
+   value, and discrete bands make "which bucket" answerable at a glance where a smooth
+   gradient would not. Opacity carries the low end and weight the high end, so the signal
+   survives greyscale printing. */
+.div-effect-val { font-variant-numeric: tabular-nums; color: var(--color-terminal-model); }
+.div-effect-val.q1 { opacity: 0.4; }
+.div-effect-val.q2 { opacity: 0.62; }
+.div-effect-val.q3 { opacity: 0.82; font-weight: 600; }
+.div-effect-val.q4 { opacity: 1; font-weight: 700; }
+/* Header keeps the purple TEXT (the column is model output) but loses the tinted band and
+   the bounding rule — with graded values below it, a filled header competed with the data
+   it labels instead of introducing it. */
+.terminal-data-table th.div-effect-head { color: var(--color-terminal-model); }
+
+/* A NEGATIVE component VaR is a position that REDUCES total portfolio risk — a hedge. It
+   reuses the positive-green variable but not the `.positive` CLASS: on this column the sign
+   convention is inverted (a negative number is the good outcome), so sharing a selector with
+   P&L would let a future restyle of one silently change the meaning of the other. Weight
+   matches `td.positive` so the two read as the same emphasis level. */
+.component-var-hedge { color: var(--color-terminal-positive); font-weight: 600; }
+
+/* ---- Order ticker ---- */
+.order-ticker { max-height: 260px; overflow-y: auto; font-family: var(--font-mono); font-size: 12px; }
+.order-head { display: grid; grid-template-columns: 72px 1fr 96px 96px; gap: 8px; padding: 6px 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-terminal-secondary); border-bottom: 1px solid var(--color-terminal-border); }
+.order-head .r { text-align: right; }
+.order-row { display: grid; grid-template-columns: 72px 1fr 96px 96px; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #f1f5f9; }
+.order-row .shares, .order-row .price { text-align: right; }
+.order-row .side-buy { color: var(--color-terminal-positive); font-weight: 600; }
+.order-row .side-sell { color: var(--color-terminal-negative); font-weight: 600; }
+.order-row .t { color: var(--color-terminal-secondary); }
+
+/* ---- Compute clock ---- */
+.compute-clock { font-family: var(--font-mono); }
+.compute-bar-track { height: 22px; background: #f1f5f9; border: 1px solid var(--color-terminal-border); border-radius: 3px; overflow: hidden; }
+/* Idle between 5-min bars: the run finished and the clock waits. Faint dashed
+   border marks the empty track as "waiting", not "0% of a run in progress". */
+.compute-bar-track.idle { border-style: dashed; border-color: #cbd5e1; background: #f8fafc; }
+.compute-bar-fill { height: 100%; background: var(--color-terminal-blue); width: 0; transition: width 0.1s linear; }
+.compute-bar-fill.done { background: var(--color-terminal-positive); }
+.compute-clock-caption { display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px; color: var(--color-terminal-secondary); }
+.compute-clock-seconds { font-size: 24px; font-weight: 600; }
+/* Run status (left) + the machine the wall-time was measured on (right). The CPU lives
+   here, not in the panel header: that header is title | MODEL chip | note, and a full chip
+   name wrapped it. Here it also sits beside the seconds it qualifies. */
+.compute-clock-meta {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  margin-top: 4px; font-size: 11px; font-family: var(--font-mono);
+  color: var(--color-terminal-secondary);
+}
+/* Chip names vary wildly in length across machines (Ryzen / Xeon / Apple M-series), so the
+   label truncates rather than wrapping the row — full string stays in the title tooltip. */
+.compute-clock-cpu {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; text-align: right; opacity: 0.85;
+}
+
+/* Run-duration history: a column strip running as a TAPE — the newest run enters at the
+   RIGHT edge and older runs travel left as the session progresses. Replaced a per-row list
+   where each run owned a full-width track that was mostly empty — short runs read as blank
+   placeholder rails and that emptiness dominated the panel regardless of the scale
+   denominator. Columns spend ink only on the bars, so the latency TREND is what you see.
+   Heights are relative to the slowest observed run (RunHistoryStrip.jsx).
+
+   Bars are THIN and fixed-width, never flex-grown: with `flex: 1` a two-run session
+   stretched each column into a huge block that read as a bulky area chart rather than a
+   latency series. Fixed width means a new run ADDS a column instead of resizing every
+   existing one, so the tape advances at a constant tick pitch.
+
+   `justify-content: flex-end` packs the columns against the right edge, so an early
+   session builds leftward FROM the entry point instead of sitting stranded at the left.
+
+   A session acts on fewer bars than the strip has room for, so the left end stays empty
+   for the whole run. The summary stats sit in that reserved space rather than on their
+   own rows underneath — the panel keeps the thin fixed-pitch tape and loses two rows of
+   height. Once a long run does fill the width, columns fall off the left edge as before
+   and the stat block never moves. */
+.run-spark-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; }
+.run-spark {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: flex-end; justify-content: flex-end; gap: 2px;
+  height: 42px;
+  overflow: hidden; /* older runs fall off the left edge — the strip never scrolls */
+  border-bottom: 1px solid var(--color-terminal-border);
+}
+.run-spark-col {
+  flex: 0 0 5px; width: 5px; border-radius: 1px 1px 0 0;
+  background: var(--color-terminal-blue); opacity: 0.45;
+}
+/* Newest run (rightmost, where time enters) reads solid so the eye lands on it first. */
+.run-spark-col:last-child { opacity: 1; }
+/* No wall-time to plot: hatched (aborted) / flat grey (dead) stubs — present in the
+   sequence, visibly not a timing. */
+.run-spark-col.kind-aborted { background: repeating-linear-gradient(45deg, #fecaca 0 3px, #fff 3px 6px); opacity: 1; }
+.run-spark-col.kind-dead { background: #e2e8f0; opacity: 1; }
+/* Label/value pairs in the tape's unreachable left end. `auto max-content` keeps the
+   column exactly as wide as the widest reading, so the strip gets every remaining pixel. */
+.run-spark-stats {
+  flex: 0 0 auto; margin: 0; display: grid;
+  grid-template-columns: auto max-content; gap: 1px 8px;
+  font-family: var(--font-mono); font-size: 10px; line-height: 1.35;
+}
+.run-spark-stats dt {
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-terminal-secondary);
+}
+.run-spark-stats dd { margin: 0; text-align: right; color: var(--color-terminal-text); }
+
+/* Fitted DCC α / β over landed runs — two compact stacked sparklines under the converged
+   badge. The stat row above shows only the LATEST fit; these show how each param moves.
+   Kept small (28px plot) so both fit under the badge without pushing Diagnostics into a
+   scroll. The y-axis is fixed PER PARAM and lives in the component (α on its empirical
+   range, β on the stationarity bound) — model facts, not style. */
+.param-spark-stack { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.param-spark-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--font-mono); font-size: 11px;
+}
+.param-spark-label {
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  color: var(--color-terminal-secondary);
+}
+/* Plain-language gloss on the Greek ("shock" / "memory") — a non-specialist should not
+   have to know which DCC term is which to read the chart. */
+.param-spark-hint { font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.75; }
+.param-spark-val { font-weight: 600; color: var(--color-terminal-text); }
+/* Baseline sits at y=0 (the axis floor), so a param pinned near zero reads as ON the
+   floor rather than floating — that is the honest picture of "almost no shock response". */
+.param-spark-svg { display: block; margin-top: 2px; overflow: visible; }
+/* Hover crosshair, shared by every time-series chart on the desk (α, β, ρ, run durations).
+   The wrapper is the pointer target AND the tooltip's positioning context; `touch-action`
+   keeps a drag over a chart scrolling the panel rather than being swallowed. */
+.chart-hover { position: relative; cursor: crosshair; touch-action: pan-y; }
+.chart-crosshair { stroke: var(--color-terminal-secondary); stroke-width: 1; opacity: 0.5; }
+/* Tooltip sits ABOVE the plot (bottom: 100%) so it never covers the point it describes,
+   and is click-through so it cannot steal a cell/row selection underneath. */
+.chart-tip {
+  position: absolute; bottom: 100%; transform: translateX(-50%); margin-bottom: 4px;
+  display: flex; gap: 6px; align-items: baseline; white-space: nowrap; pointer-events: none;
+  padding: 2px 6px; background: var(--color-terminal-sidebar); color: #fff;
+  font-family: var(--font-mono); font-size: 10px; z-index: 5;
+}
+.chart-tip-val { font-weight: 600; }
+.chart-tip-age { color: #94a3b8; }
+/* Right-pinned variant (run strip): the readout has no per-column anchor to sit over. */
+.chart-tip.pin-right { right: 0; transform: none; }
+/* Hovered run column: the crosshair equivalent for a bar strip too narrow to rule. */
+.run-spark-col.hovered { background: var(--color-terminal-sidebar); opacity: 1; }
+/* Takes the flex sizing `.run-spark` used to own, so the strip keeps its width while the
+   wrapper (which does NOT clip) hosts the tooltip. */
+.run-spark-wrap { flex: 1 1 auto; min-width: 0; }
+
+/* Sub-heading inside a panel that now stacks several blocks (compute / model stages /
+   diagnostics). Reuses the sidebar section-title type scale so the desk keeps one
+   heading vocabulary, minus the dark-sidebar background. */
+.panel-subhead {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--color-terminal-secondary); font-family: var(--font-mono);
+  padding: 14px 0 6px; border-top: 1px solid var(--color-terminal-border); margin-top: 14px;
+}
+/* Diagnostics are now a BLOCK inside Risk Reassessment, not their own panel, so the
+   pre-first-snapshot dead state greys just that block. Matches `.terminal-panel.inert
+   .terminal-panel-content` — the compute clock above it stays live, which is correct:
+   the clock is running precisely because no snapshot has landed yet. */
+.diagnostics-inert { opacity: 0.28; filter: grayscale(1); pointer-events: none; }
+
+/* Three stats in the desk's NARROW column, so the fixed 3-col track they used as a
+   standalone full-width panel would crush the labels. Auto-fit wraps them to two rows
+   instead of squeezing "Student-t ν" onto three lines. */
+.diagnostics-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px 16px;
+}
+/* Gloss for the ν stat, carried below the row (see the JSX note). */
+.diagnostics-note {
+  margin-top: 6px; font-family: var(--font-mono); font-size: 10px;
+  color: var(--color-terminal-secondary);
+}
+.diagnostics-status { margin-top: 12px; }
+/* The figure in a labelled stat: mono and large enough to read across the desk. */
+.stat-value { font-family: var(--font-mono); font-size: 22px; font-weight: 600; }
+
+/* ---- Correlation matrix ---- */
+/* NxN over the HELD names: scroll BOTH axes inside the panel; header row + first column stick. */
+/* Reserved to the SAME --desk-rows as the positions table, on both axes: a book of three
+   names must not show a wider matrix here than rows there. Fixed height + fixed column
+   width, so the grid fills the reserved box instead of resizing itself on every new name;
+   past the sixth name both axes scroll. */
+.corr-scroll {
+  --corr-row: 35px; /* 8px + 8px padding + 17px line + 2px cell borders */
+  --xbar: 8px;
+  height: calc((var(--desk-rows) + 1) * var(--corr-row) + var(--xbar)); /* +1 = header row */
+  overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+/* `width: auto` + `table-layout: fixed`: under `width: 100%` the columns stretched to the
+   panel and re-flowed every time a name entered the book — the jumpiness this reserve is
+   meant to remove. Fixed columns keep a cell the same size all run. */
+.corr-matrix { border-collapse: separate; border-spacing: 0; font-family: var(--font-mono); font-size: 13px; width: auto; table-layout: fixed; }
+.corr-matrix th, .corr-matrix td {
+  padding: 8px 10px; text-align: center; border: 1px solid var(--color-terminal-border);
+  width: 62px; line-height: 17px; /* pinned: --corr-row above is computed from the line */
+}
+.corr-matrix th { font-size: 11px; text-transform: uppercase; color: var(--color-terminal-secondary); background: #f8fafc; white-space: nowrap; }
+.corr-matrix thead th { position: sticky; top: 0; z-index: 2; }
+.corr-matrix th.corr-rowhead { position: sticky; left: 0; z-index: 2; }
+.corr-matrix th.corr-corner { position: sticky; top: 0; left: 0; z-index: 3; }
+.corr-cell { color: #fff; font-weight: 600; }
+.corr-cell.selectable { cursor: pointer; }
+.corr-cell.selected { outline: 3px solid var(--color-terminal-text); outline-offset: -3px; }
+
+/* selected-pair correlation history chart */
+.corr-chart { margin-top: 14px; font-family: var(--font-mono); }
+.corr-chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.corr-chart-pair { font-size: 12px; font-weight: 600; }
+.corr-chart-val { font-size: 20px; font-weight: 600; color: var(--color-terminal-blue); }
+.corr-chart-svg { display: block; background: #f8fafc; border: 1px solid var(--color-terminal-border); }
+.corr-chart-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-terminal-secondary); margin-top: 3px; }
+
+/* ---- Market clock / status ---- */
+/* The bar's three chips (replay badge, playback button, explainer ⓘ) each had their own
+   padding and font-size, so each resolved to a different height and the row read as
+   ragged. They now share ONE height token and centre their contents; only the horizontal
+   padding stays per-chip, since their labels are different lengths. */
+:root { --clock-chip-h: 28px; }
+.market-clock {
+  display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+  font-size: 12px; color: #cbd5e1;
+}
+.market-clock .replay-badge,
+.market-clock .playback-toggle,
+.market-clock .explainer-open {
+  height: var(--clock-chip-h);
+  display: inline-flex; align-items: center; justify-content: center;
+  padding-top: 0; padding-bottom: 0;
+}
+.replay-badge {
+  padding: 0 8px; border-radius: 3px; background: #334155; color: #93c5fd;
+  font-weight: 600; letter-spacing: 0.03em;
+}
+.traffic-light { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.traffic-light.green { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,.6); }
+.traffic-light.amber { background: #f59e0b; box-shadow: 0 0 4px rgba(245,158,11,.6); }
+
+/* ---- Playback pause/play ---- */
+/* One `min-width` for every state (START / PAUSE / PLAY / RESTART): the button's width was
+   content-driven, so each label swap resized it and nudged the rest of the bar. The state
+   change is already signalled by the colour flip and the label. */
+.playback-toggle {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+  border-radius: 3px; padding: 4px 12px; cursor: pointer; border: 1px solid transparent;
+  min-width: 104px;
+}
+/* showing PAUSE (playing) -> yellow ; showing PLAY (paused) -> green */
+.playback-toggle.pause { color: #422006; background: #f59e0b; border-color: #d97706; }
+.playback-toggle.pause:hover { background: #fbbf24; }
+.playback-toggle.play { color: #052e16; background: #22c55e; border-color: #16a34a; }
+.playback-toggle.play:hover { background: #4ade80; }
+/* run finished -> RESTART takes the button's slot */
+.playback-toggle.restart { color: #052e16; background: #22c55e; border-color: #16a34a; }
+.playback-toggle.restart:hover { background: #4ade80; }
+
+/* ---- Degraded banner ---- */
+.degraded-banner {
+  background: #fffbeb; border: 2px solid #fcd34d; color: var(--color-terminal-warn);
+  padding: 10px 16px; margin-bottom: 16px; font-weight: 600; font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.terminal-status-badge { display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 3px; }
+.terminal-status-badge.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.terminal-status-badge.warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+/* ---- Onboarding gate + explainer ---- */
+/* The explainer is long enough to overflow a phone, so the BOX is bounded and its BODY
+   scrolls — the title, close button and the START action stay pinned. Scrolling the whole
+   box would push the one button the reader needs below the fold.
+
+   Bounded by the BACKDROP's height rather than a `100vh` calc of its own: the backdrop is
+   the element that knows the visible viewport (see its `dvh` note), and 100% of it already
+   excludes the padding, so the box cannot restate the inset and get it wrong. */
+.modal-box.wide {
+  max-width: 640px; max-height: 100%;
+  display: flex; flex-direction: column;
+}
+.modal-box.wide .modal-body { overflow-y: auto; min-height: 0; }
+.modal-box.gate { max-width: 420px; }
+/* Onboarding actions are the reader's whole decision, so they sit centred and equal-width
+   rather than tucked into a corner. The end-of-run modal keeps its right-aligned single
+   button — it dismisses a run, it does not ask anything. */
+.modal-box.gate .modal-actions,
+.modal-box.wide .modal-actions { justify-content: center; }
+.modal-box.gate .modal-action,
+.modal-box.wide .modal-action { min-width: 132px; text-align: center; }
+.modal-body p + p { margin-top: 10px; }
+.modal-body p.modal-subhead {
+  margin-top: 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-terminal-secondary);
+}
+.modal-list { margin: 6px 0 0; padding-left: 18px; list-style: disc; }
+.modal-list li { margin-bottom: 5px; }
+.gate-hint { color: var(--color-terminal-secondary); font-size: 12px; }
+
+/* Permanent explainer trigger in the clock bar: the gate can be dismissed three different
+   ways, so the way back in must not depend on any of them. */
+.explainer-open {
+  font-family: var(--font-mono); font-size: 13px; line-height: 1; padding: 0 9px;
+  border-radius: 3px; background: none; border: 1px solid #475569; color: #93c5fd;
+  cursor: pointer;
+}
+.explainer-open:hover { background: #334155; color: #fff; }
+
+/* The gate is the one modal scoped to the DESK, not to the page: it is pinned to
+   `.terminal-canvas`, so it dims the desk and stops short of the rail and the clock bar.
+   The gate tells the reader to pick a scenario before starting, and a blocked list would
+   make that line a tease — this buys that with geometry instead of stacking order. The
+   previous fix raised the rail ABOVE the backdrop (z-index 60 against the primitive's 50),
+   which left the gate box itself underneath the rail wherever the two overlapped. Nothing
+   else paints inside the canvas, so there is now nothing left to lose a z-fight with.
+   Overrides `position: fixed` from the shared primitive; mobile puts it back.
+
+   The explainer is pinned to the same box for the same reason, minus the rail argument:
+   viewport-fixed it centres against a page that includes the tab bar and the footer strip,
+   so a box tall enough to need bounding runs UNDER the tab bar (z-index 1000) and loses its
+   top edge and its ✕. Inside the canvas the available height IS the desk pane, so the box
+   is bounded by something it can never be painted over by. `height: auto` undoes the
+   primitive's `100dvh`, which is a VIEWPORT measure and meaningless once the containing
+   block is the canvas — left standing it would push the box's centre below the pane. */
+.modal-backdrop.gate-backdrop,
+.modal-backdrop.desk-backdrop { position: absolute; inset: 0; height: auto; }
+
+/* Scenario attention cue, in four beats: two seconds of nothing (the gate box has just
+   appeared and is being read), a half-second FADE so the frame arrives rather than snaps,
+   three slow glow swells to pull the eye, then it settles into a quiet red frame that
+   STAYS until the list is used or the run starts.
+
+   One 8s keyframe set rather than a repeating pulse: the fade-in and the settle are part
+   of the same gesture, and an iteration count cannot express "arrive, breathe three
+   times, hold". Percentages are the beats — 0-25% is the dead wait, 31% is faded in,
+   swells peak at 44/62/80%, and 100% is the resting frame that `forwards` holds.
+
+   Drawn as an overlay pseudo-element, not a box-shadow on the section: the section's own
+   children paint their backgrounds (the title band, the selected scenario's blue fill)
+   over an inset shadow, which is why a border on the parent reads as broken at exactly
+   the edges that matter. */
+@keyframes scenario-cue {
+  0%, 25% { opacity: 0; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  31% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  44% { opacity: 1; box-shadow: 0 0 14px 1px rgba(239, 68, 68, 0.55), inset 0 0 14px 0 rgba(239, 68, 68, 0.25); }
+  53% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  62% { opacity: 1; box-shadow: 0 0 14px 1px rgba(239, 68, 68, 0.55), inset 0 0 14px 0 rgba(239, 68, 68, 0.25); }
+  71% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  80% { opacity: 1; box-shadow: 0 0 14px 1px rgba(239, 68, 68, 0.55), inset 0 0 14px 0 rgba(239, 68, 68, 0.25); }
+  89%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.terminal-section.flash-attention { position: relative; }
+.terminal-section.flash-attention::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border: 2px solid #ef4444; opacity: 0;
+  animation: scenario-cue 8s ease-in-out forwards;
+}
+/* Reduced motion still gets the cue — the resting frame, immediately, with no swell. */
+@media (prefers-reduced-motion: reduce) {
+  .terminal-section.flash-attention::after { animation: none; opacity: 1; }
+}
+
+/* Skeleton desk — the layout with nothing in it, shown before START. Deliberately drab:
+   it is scaffolding behind a backdrop, not a state worth reading. */
+.terminal-panel.skeleton .terminal-panel-content {
+  min-height: 96px; display: flex; align-items: center; justify-content: center;
+}
+.skeleton-dash { font-family: var(--font-mono); font-size: 20px; color: #cbd5e1; }
+.terminal-metric-card.skeleton { border-color: #cbd5e1; background: #fbfcfd; }
+.terminal-metric-card.skeleton .terminal-metric-value { color: #cbd5e1; }
+
+/* The narrow-desktop band, and the reason `compactMoney` used to abbreviate at $1M.
+   Three cards still share one row here, so the card is at its smallest while the figure is
+   at its longest: at an 800px viewport the shell spends 240px on the sidebar and 32px on
+   the content padding, leaving (800-272-32)/3 = 165px per card and 133px inside its
+   padding. A seven-figure figure is ~168px at 28px mono — it clipped, which is what the
+   old $1M threshold was hiding rather than fixing. Now that the figure is exact to eight
+   digits, the type gives way instead: 18px fits ~108px, clear at every width in the band.
+   Above ~900px the card is wide enough for the full 28px and this rule stops applying. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .terminal-metric-value { font-size: 18px; overflow-wrap: anywhere; }
+}
+
+
+/* ---- Terminal mobile pass (pre-launch) ---- */
+/* The desk is a two-column desktop grid pinned to the viewport height. On a phone a
+   240px fixed sidebar beside 1fr leaves nothing for the content, so below 760px the
+   shell stacks: sidebar on top (natural height, its menu wraps), desk below. The
+   pinned-height model is dropped for a normal page scroll — a phone cannot show three
+   panel rows inside one screen, and internal panel scroll boxes would nest badly. */
+@media (max-width: 760px) {
+  .terminal-shell {
+    grid-template-columns: 1fr;
+    height: auto; min-height: calc(100vh - var(--tabbar-h) - var(--footer-term-h));
+    overflow: visible;
+  }
+  /* The desk's inner flex column also drops its pinned height + clip so the content
+     area grows with its panels instead of scrolling inside a short box. */
+  .terminal-shell > div { height: auto !important; overflow: visible !important; }
+  .terminal-sidebar { overflow-y: visible; border-right: none; border-bottom: 1px solid #334155; }
+  .terminal-content-area { overflow-y: visible; padding: 12px; }
+  /* No width cap and no pinned frame on a phone: the page scrolls, so the canvas is just
+     a passthrough here and the gate goes back to being pinned to the viewport (below). */
+  .terminal-canvas { max-width: none; }
+  /* Collapse every multi-column panel grid to a single column. The desk's two column
+     stacks become one continuous stack, so panel order follows the DOM: the whole book
+     column, then the model column. */
+  .terminal-desk,
+  .terminal-grid-3col { grid-template-columns: 1fr; }
+  /* Drop the book stack's 2-track span too: a span wider than the track count makes grid
+     add an implicit column, so the desk would silently stay 2-wide here. */
+  .terminal-desk > :first-child { grid-column: auto; }
+  /* Metric numbers are large; keep them from forcing a card wider than the column. */
+  .terminal-metric-value { font-size: 24px; overflow-wrap: anywhere; }
+
+  /* Stacked one per row, each card was a headline figure with an empty right half beside
+     it. The card becomes two columns instead — the reading on the left, its visual on the
+     right, spanning the left column's rows — which both shortens the stack and gives the
+     chart four times the area it had.
+
+     `display: contents` on the per-$1k row is what makes this a pure CSS change: it hands
+     that row's two children (the figure, the chart) to the CARD's grid, so the figure can
+     stay in the left column while the chart moves to the right one, with nothing moved in
+     the DOM and no second render path.
+
+     Only cards carrying a right-hand visual opt in, via `has-aside` set from the content.
+     The awaiting and inert states have none, and a reserved-but-empty 40% would cost the
+     awaiting note the width it needs to wrap. */
+  .terminal-metric-card.has-aside {
+    display: grid; grid-template-columns: 3fr 2fr; column-gap: 12px; align-items: start;
+  }
+  .has-aside .terminal-metric-label,
+  .has-aside .terminal-metric-value,
+  .has-aside .metric-perk-figure { grid-column: 1; }
+  /* The desktop rule reserves two label lines so three cards keep their internal alignment
+     when only one wraps. Here the grid sets that alignment and each card owns its own row,
+     so the reservation is only dead space. */
+  .has-aside .terminal-metric-label { min-height: 0; }
+  .has-aside .metric-perk { display: contents; }
+  /* `display: contents` leaves the row no box to draw its rule on, so the rule travels to
+     the figure — it still separates the two readings down the left column. */
+  .has-aside .metric-perk-figure {
+    padding-top: 10px; margin-top: 10px;
+    border-top: 1px solid var(--color-terminal-border);
+  }
+  /* Right column, centred against the left one's rows: label + value + per-$1k on the model
+     cards, label + value on the gross card. Spans are explicit counts rather than `1 / -1`
+     because every row here is implicit, and -1 does not resolve against an implicit grid. */
+  .has-aside .chart-hover { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+  .has-aside .chart-hover .param-spark-svg { height: 56px; }
+  .has-aside .gross-split {
+    display: block; grid-column: 2; grid-row: 1 / span 2; align-self: center;
+    font-size: 10px; font-family: var(--font-mono); color: var(--color-terminal-secondary);
+  }
+  /* Net is the difference the split bar draws, so the caption would restate it. */
+  .has-aside .metric-net { display: none; }
+  /* The market-clock bar carries a light + label + replay badge + PLAY/PAUSE button;
+     at phone width they wrap rather than overflow the header. */
+  .market-clock { flex-wrap: wrap; gap: 6px; row-gap: 6px; }
+  /* Bigger tap targets on the terminal chrome's interactive controls. Raising the shared
+     chip height keeps all three the same size — setting vertical padding here would not,
+     since `.market-clock`'s height rule zeroes it. */
+  .market-clock { --clock-chip-h: 40px; }
+  .playback-toggle { padding-left: 14px; padding-right: 14px; }
+  /* `table-layout: fixed` ignores min-width, so the phone cell is set by width. */
+  .corr-matrix th, .corr-matrix td { width: 52px; }
+
+  /* Stacked, the sidebar's nine menu rows would push the desk a full screen down. Only
+     the Scenario list is interactive, so it goes first and keeps a real tap height; the
+     Sample and Model lists are static captions and collapse to wrapped chips (2 rows
+     instead of 7). Order is by position: 1 Sample, 2 Scenario, 3 Model. */
+  .terminal-sidebar { display: flex; flex-direction: column; }
+  .terminal-sidebar .terminal-section:nth-child(2) { order: -1; }
+  .terminal-sidebar .terminal-section:nth-child(2) .terminal-menu button { min-height: 44px; }
+  .terminal-sidebar .terminal-section:nth-child(1) .terminal-menu,
+  .terminal-sidebar .terminal-section:nth-child(3) .terminal-menu {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px;
+  }
+  .terminal-sidebar .terminal-section:nth-child(1) .terminal-menu button,
+  .terminal-sidebar .terminal-section:nth-child(3) .terminal-menu button {
+    width: auto; padding: 5px 9px; font-size: 11px;
+    border: 1px solid #334155; border-radius: 3px; color: #94a3b8;
+  }
+  .terminal-sidebar .terminal-section:nth-child(1) .terminal-menu-sub { display: inline; margin: 0 0 0 4px; }
+  .terminal-section-title { padding: 10px 12px 6px; }
+
+  /* Four rows of tape, not the desktop 260px (~9). The panel leads the page here, so it
+     has to prove the desk is live and then get out of the way of the numbers below it.
+     One row is its line box (1.5em, from the body line-height) + 12px vertical padding +
+     its 1px rule. Stated in em rather than px so it stays four rows in the ≤480px band
+     below, where the ticker font drops to 11px. */
+  .order-ticker { max-height: calc(4 * (1.5em + 13px)); }
+
+  /* Half the desktop inset. The explainer is height-bound here, so every pixel the backdrop
+     keeps for itself is a line of prose the reader has to scroll for. */
+  .modal-backdrop { padding: 12px; }
+
+  /* The gate points at the scenario list — "pick a market regime on the left" — but on a
+     phone the rail is stacked ABOVE the desk, not to the left of it, so a viewport-centred
+     box lands directly on top of the list it names, hiding both the choice and the red cue
+     drawing the eye to it. Anchored to the bottom instead: the rail stays readable, and
+     START sits in the thumb's reach. Bottom-anchored rather than placed under the rail in
+     flow, because the page scrolls here — an in-flow box would carry START off-screen.
+
+     `.gate-backdrop` only. The explainer is a read-everything surface with nothing behind
+     it worth preserving, and it stays centred.
+
+     Back to the viewport, undoing the desktop rule: the canvas is page-tall here, so an
+     absolute box anchored to its bottom edge would sit a full screen below the fold. */
+  .modal-backdrop.gate-backdrop {
+    position: fixed; inset: 0;
+    align-items: flex-end; padding: 12px 12px 20px;
+  }
+  /* The explainer goes back to the viewport for the same reason — pinned to a page-tall
+     canvas it would open a full screen below the fold — and there it DOES have to clear the
+     sticky tab bar (z-index 1000), which the desktop canvas placement never exposed it to. */
+  .modal-backdrop.desk-backdrop {
+    position: fixed; inset: 0; height: 100dvh; z-index: 1100;
+  }
+  /* And because the backdrop is full-viewport again, the rail needs the raise the desktop
+     no longer does — stacked ABOVE the desk here, it would otherwise be dimmed and
+     unclickable while the gate asks the reader to pick a regime. */
+  .terminal-sidebar.gated { position: relative; z-index: 60; }
+}
+
+@media (max-width: 480px) {
+  /* The order ticker's fixed 72/96/96px columns plus gaps leave ~35px for the ticker
+     name at 375px. Tighten the fixed tracks so the name column stays legible. */
+  .order-head, .order-row { grid-template-columns: 52px 1fr 72px 76px; gap: 6px; font-size: 11px; }
+  .order-ticker { font-size: 11px; }
+  /* Wrapping is base behaviour now; here only the gap tightens with the padding. */
+  .terminal-panel-header { gap: 2px 10px; }
+  .terminal-panel-note { font-size: 10px; }
+  .terminal-panel-content { padding: 12px; }
+  .corr-matrix { font-size: 12px; }
+  .corr-matrix th, .corr-matrix td { padding: 8px 4px; width: 46px; }
+}

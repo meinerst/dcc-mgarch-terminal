@@ -1,0 +1,45 @@
+# Node / Next.js
+node_modules/
+app/.next/
+app/out/
+# The deploy staging copy: `out/` nested under its basePath, built at deploy time.
+# See docs/DEPLOY.md.
+app/out-deploy/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+uv.lock
+
+# Env / editor / logs
+.env
+.vscode/
+*.log
+
+# Legacy notebook scratch outputs (regenerable)
+sample_start.csv
+sample_sim.csv
+
+# Pre-flight dry-run scratch (a truncated roll is NOT a scoreable result — the
+# stress driver writes these under a _dryrun* --out dir; never commit them).
+research/stress30/_dryrun*/
+# Same rule for the 3-asset smoke test (run_parallel --steps --out results/_smoke).
+research/_smoke/
+
+# The anonymization mapping — regenerable by private.publish.anonymize, and the one
+# file that reverses the public data/. Kept on disk for reproducibility, never committed.
+private/publish/ticker_map.json
+
+# Claude local settings
+.claude/settings.local.json
+
+# Third-party agent skills (installed via `npx skills add`, not thesis content)
+.agents/
+.claude/skills/
+skills-lock.json

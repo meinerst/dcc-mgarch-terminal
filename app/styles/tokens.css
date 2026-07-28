@@ -1,0 +1,109 @@
+/* Design tokens and the global reset — the only stylesheet both surfaces share.
+   Nothing here is owned by a feature: colours, type scale, the two chrome heights the
+   layouts subtract, and the desk's row metrics. */
+
+/* DCC-MGARCH terminal — bare academic desk. Ported from
+   Preliminary Frontend Design/hybrid-minimalist-terminal.html (terminal mode only).
+   Functionality over flourish (Planning.md §Terminal UI principle): no decorative
+   animations. The one transition kept is the compute progress bar fill — functional
+   feedback, not decoration. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --color-terminal-bg: #f8fafc;
+  --color-terminal-panel: #ffffff;
+  --color-terminal-sidebar: #1e293b;
+  --color-terminal-text: #0f172a;
+  --color-terminal-secondary: #64748b;
+  --color-terminal-border: #e2e8f0;
+  --color-terminal-blue: #2563eb;
+  --color-terminal-positive: #059669;
+  --color-terminal-negative: #dc2626;
+  --color-terminal-warn: #b45309;
+  /* Model-provenance purple. Marks WHICH panels/columns are model OUTPUT (estimated,
+     can be wrong) versus book bookkeeping (arithmetic, always true). Deliberately a
+     different semantic axis from green/red/amber, which encode STATUS — so purple is
+     confined to chrome (header bands, chips, column marks) and never colors a number. */
+  --color-terminal-model: #7c3aed;
+  /* One step up the violet ramp from the original 50/100/200 tints — those read as
+     near-white on a #f8fafc desk and the provenance cue was lost. Kept as a set so the
+     bg < chip < border contrast order still holds. */
+  --color-terminal-model-bg: #f3e8ff;
+  --color-terminal-model-chip: #e9d5ff;
+  --color-terminal-model-border: #c4b5fd;
+
+  /* --font-display / --font-sans / --font-mono are NOT declared here. They come from the
+     next/font variables on <html> in app/layout.js (IBM Plex Serif / Sans / Mono, all
+     self-hosted). Re-declaring them at :root duplicates the cascade: same specificity as
+     the next/font class, so which one wins is stylesheet order, and the literal family
+     names here would resolve to a system face rather than the self-hosted files. */
+}
+
+html { font-size: 16px; }
+
+:root { --tabbar-h: 46px; --footer-term-h: 30px; }
+
+/* How many book names the desk shows before scrolling. ONE knob for both book panels —
+   positions rows and correlation rows/columns — so the two can never disagree about how
+   much of the book is on screen. The space is reserved from the first render; the book
+   grows into it rather than resizing the desk on every new name.
+
+   --tall-h is that reserve in pixels, and it is arithmetic rather than a guess: table
+   cells carry an explicit line-height, so a row is exactly padding + line + border, and
+   --desk-xbar pays for the horizontal scrollbar those containers draw. Global because a
+   stretched panel reuses it as a min-height FLOOR (desk columns, below). */
+:root {
+  --desk-rows: 6;
+  --desk-row-h: 41px;  /* 10px + 10px padding + 20px line + 1px bottom border */
+  --desk-head-h: 44px; /* 10px + 10px padding + 20px line + thead's 2px top/bottom rules */
+  --desk-xbar: 8px;    /* ::-webkit-scrollbar height, further below */
+  --tall-h: calc(var(--desk-head-h) + var(--desk-rows) * var(--desk-row-h) + var(--desk-xbar));
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-terminal-text);
+  background: var(--color-terminal-bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Body scrolls for the academic pages; the terminal route pins its own height
+     under the tab bar (below). No global overflow:hidden — that was terminal-only. */
+}
+
+
+/* ---- Scrollbars (global chrome) ---- */
+/* Scrollbars are square, not pill-shaped: a rounded thumb is the one soft shape on a surface
+   built from 2px right-angled borders, and it reads as OS chrome rather than as part of the
+   terminal. Track is hairline-ruled like a panel edge, thumb is a flat slate block that
+   darkens to the text color on hover.
+   The Firefox fallback MUST stay behind `@supports not selector(::-webkit-scrollbar)`:
+   Chrome 121+ implements `scrollbar-width`/`scrollbar-color` and, once either is set, drops
+   every `::-webkit-scrollbar-*` rule and draws its own rounded native bar. Setting them
+   globally therefore un-squares the thumb in the browser we style for. */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9; }
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; box-shadow: inset 0 0 0 1px var(--color-terminal-border); }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-terminal-text); }
+::-webkit-scrollbar-corner { background: #f1f5f9; }
+/* End caps. Chrome draws a button box at BOTH ends of BOTH ends (start:increment and
+   end:decrement are the phantom halves of the old double-arrow pairs) — those are hidden so
+   each end carries exactly one arrow. The glyph is a hard-edged SVG triangle rather than a
+   border trick: a border triangle cannot sit inside a box that already paints a background,
+   and `content` does not apply to scrollbar pseudo-elements. `#` must be written `%23`
+   inside a data URI or the URL truncates at the fragment. */
+::-webkit-scrollbar-button { background: #f1f5f9; box-shadow: inset 0 0 0 1px var(--color-terminal-border); background-repeat: no-repeat; background-position: center; background-size: 6px 6px; }
+::-webkit-scrollbar-button:vertical { height: 8px; }
+::-webkit-scrollbar-button:horizontal { width: 8px; }
+::-webkit-scrollbar-button:vertical:start:increment,
+::-webkit-scrollbar-button:vertical:end:decrement,
+::-webkit-scrollbar-button:horizontal:start:increment,
+::-webkit-scrollbar-button:horizontal:end:decrement { display: none; }
+::-webkit-scrollbar-button:vertical:decrement { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M4 1 L8 7 L0 7 Z' fill='%2394a3b8'/%3E%3C/svg%3E"); }
+::-webkit-scrollbar-button:vertical:increment { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M4 7 L0 1 L8 1 Z' fill='%2394a3b8'/%3E%3C/svg%3E"); }
+::-webkit-scrollbar-button:horizontal:decrement { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4 L7 0 L7 8 Z' fill='%2394a3b8'/%3E%3C/svg%3E"); }
+::-webkit-scrollbar-button:horizontal:increment { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M7 4 L1 0 L1 8 Z' fill='%2394a3b8'/%3E%3C/svg%3E"); }
+

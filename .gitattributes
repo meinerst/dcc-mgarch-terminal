@@ -1,0 +1,8 @@
+# Shell scripts must keep LF even when checked out on Windows. A CRLF `start.sh`
+# fails on macOS/Linux with `bad interpreter: /usr/bin/env bash^M` — the shebang
+# line carries the \r into the interpreter path.
+*.sh text eol=lf
+
+# Batch files are the mirror image: cmd.exe wants CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
