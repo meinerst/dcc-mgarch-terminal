@@ -13,6 +13,30 @@ addressed and measured.
 
 The demo replays a recording. This repository runs the real thing.
 
+## Specification audit — under review
+
+A specification audit of the current implementation identified several material
+inconsistencies between the documented model and the code that runs. They are:
+
+1. **Student-t probability-integral transform.** The residual standardization may be
+   incorrect, and the unit-variance Student-t parameterization used by the GARCH library
+   is not consistently accounted for.
+2. **One-step DCC forecast.** The recursion appears to omit the most recently observed
+   standardized shock.
+3. **Monte-Carlo simulation.** It does not faithfully implement the documented Gaussian
+   copula with asset-specific Student-t marginals.
+4. **Weighted marginal degrees of freedom.** This quantity is labelled in a way that
+   implies it is a Gaussian-copula parameter, which it is not.
+
+These affect the dependence estimates, the VaR forecasts, and the backtest conclusions
+that follow from them. The numerical results presented here and on the demo site are
+therefore preliminary outputs of the current implementation, not validated results of the
+corrected specification.
+
+The affected implementation, tests, documentation, and empirical results are under review.
+Corrections and updated results will be documented through public commits, so the audit
+history stays legible.
+
 ## An invitation
 
 This model is not finished, and I would rather see it improved than admired. Several limits
