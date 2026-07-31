@@ -85,7 +85,7 @@ export default function OutlookSection() {
 
       <div className="divider" />
 
-      <h3>Dependence in the tail</h3>
+      <h3>Marginals that are Student-t in name only</h3>
       <p>
         The original specifies the portfolio's Student-t degrees of freedom as a weighted average
         of the per-asset values fitted univariately, and applies that single parameter to the
@@ -97,12 +97,22 @@ export default function OutlookSection() {
         marginal values, retained for display and used in no computation.
       </p>
       <p>
-        What remains open is the dependence structure rather than the marginals. A Gaussian copula
-        has no tail dependence: extreme co-movements become asymptotically independent, which is
-        the opposite of what a crash week exhibits. A Student-t copula, which carries a single
-        dependence parameter estimated by a copula likelihood rather than borrowed from the
-        marginals, is the natural comparison, and it would be a change of model rather than of
-        implementation.
+        Correcting the label exposed a larger problem underneath it. Measured across the
+        evaluation windows on the corrected specification, the fitted marginal degrees of freedom
+        have a median of 268 on the crash window, 324 on the calm and 339 on volatile2, against
+        an upper bound of 500 imposed by the fitter. A Student-t distribution at those values is
+        a normal distribution for every practical purpose, so the marginals as fitted carry
+        essentially no excess kurtosis. The specification names a fat-tailed innovation and the
+        estimation does not find one.
+      </p>
+      <p>
+        This is the most consequential open question the study leaves, because it undercuts a
+        premise rather than a result. Whether it reflects five-minute returns that are genuinely
+        close to conditionally normal once volatility is filtered, an estimation window too short
+        to identify a tail index, or an interaction with the seasonal filter, is not established
+        here and would need its own experiment. It also compounds with the copula question above:
+        a model with neither tail-dependent joint behaviour nor fat marginal tails has very
+        little machinery left for representing a simultaneous extreme.
       </p>
 
       <div className="divider" />
