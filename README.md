@@ -13,37 +13,25 @@ addressed and measured.
 
 The demo replays a recording. This repository runs the real thing.
 
-## Specification audit — under review
-
-A specification audit of the current implementation identified several material
-inconsistencies between the documented model and the code that runs. They are:
-
-1. **Student-t probability-integral transform.** The residual standardization may be
-   incorrect, and the unit-variance Student-t parameterization used by the GARCH library
-   is not consistently accounted for.
-2. **One-step DCC forecast.** The recursion appears to omit the most recently observed
-   standardized shock.
-3. **Monte-Carlo simulation.** It does not faithfully implement the documented Gaussian
-   copula with asset-specific Student-t marginals.
-4. **Weighted marginal degrees of freedom.** This quantity is labelled in a way that
-   implies it is a Gaussian-copula parameter, which it is not.
-
-These affect the dependence estimates, the VaR forecasts, and the backtest conclusions
-that follow from them. The numerical results presented here and on the demo site are
-therefore preliminary outputs of the current implementation, not validated results of the
-corrected specification.
-
-The affected implementation, tests, documentation, and empirical results are under review.
-Corrections and updated results will be documented through public commits, so the audit
-history stays legible.
+A specification audit in July 2026 found four material inconsistencies between the model
+this project documents and the model its code computed: the standardization of the
+Student-t probability integral transform, the one-step DCC forecast, the Monte-Carlo draw,
+and the label on a degrees-of-freedom summary. All four are corrected, every result was
+regenerated afterwards, and the correction cost the project its headline finding. What was
+wrong, and what it changed, is written up under Results on the demo site; the corrected
+transforms are specified in `docs/MODEL.md`. The commit history above is the audit trail.
 
 ## An invitation
 
 This model is not finished, and I would rather see it improved than admired. Several limits
-are known and unsolved: the estimation window is short, the Student-t degrees of freedom sit
-implausibly high, and the tests across the five evaluation windows were scored without a
-multiple-testing correction. None of that is hidden. It is all written up on the demo site,
-including the arithmetic for the correction.
+are known and unsolved. The estimation window is short. The fitted Student-t degrees of
+freedom sit implausibly high, at a median of 268 to 339 across the evaluation windows
+against a fitter bound of 500, which means the marginals carry no meaningful excess
+kurtosis and a Student-t at those values is a normal distribution wearing a fat-tailed
+label. And the model is badly over-conservative: it breaches roughly six to nine times per
+window where 19.45 are expected, concentrated at the opening half hour. None of that is
+hidden. It is all written up on the demo site, including the arithmetic for the
+multiple-testing correction, under which most of the study's own rejections do not survive.
 
 If you can do better, please do. Clone it, break it, open an issue or a pull request. The
 golden master and the Kupiec and Christoffersen implementation ship with the code precisely
