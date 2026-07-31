@@ -18,7 +18,7 @@ function reassessEvent(extra = {}) {
     converged: true,
     degraded: false,
     held_names: 3,
-    dcc: { a: 0.03, b: 0.95, nu: 7 },
+    dcc: { a: 0.03, b: 0.95, nu_marginal_avg: 7 },
     corr_spotlight: [[1]],
     corr: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     marketPrices: { AAPL: 50, JPM: 30, CVX: 80 },

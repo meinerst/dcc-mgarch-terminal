@@ -1,8 +1,8 @@
 """Univariate GARCH(1,1) with Student-t innovations, plus the PIT to uniform data.
 
 Extracted from ``App.ipynb`` -> ``run_garch_on_return()`` / ``garch_t_to_u()``.
-Baseline-faithful: reproduces the original numeric behavior exactly, including one
-preserved quirk (see ``_pit_to_uniform``) that later shows up as a measured delta.
+Structure is baseline-faithful; the PIT itself is not — the original's residual
+standardization and Student-t parameterization were both wrong (see ``_pit_to_uniform``).
 """
 
 from __future__ import annotations
@@ -33,17 +33,22 @@ class GarchFit:
 def _pit_to_uniform(returns: pd.Series, res, mu: float, nu: float) -> np.ndarray:
     """Probability-integral-transform standardized residuals to uniform (0, 1).
 
-    NOTE (preserved original quirk): the standardized residual is divided by
-    ``sqrt(conditional_volatility)``. ``arch``'s ``conditional_volatility`` is
-    already the conditional standard deviation, so the dimensionally correct form
-    is ``residual / conditional_volatility``. This preserves the original
-    ``/ sqrt(...)`` so the golden master pins true baseline behavior; correcting it
-    is a later 'optimize' pass logged as a before/after delta (findings_log.md).
+    Two corrections over the original, both load-bearing for everything downstream —
+    a mis-standardized PIT is not uniform, so `Q_bar`, the DCC path and the forecast
+    correlation are all estimated on the wrong marginals:
+
+    * ``arch``'s ``conditional_volatility`` is ALREADY the conditional standard
+      deviation, so the residual is divided by it, not by its square root (the
+      original's ``/ sqrt(...)`` also left a stray ``sqrt(scale)`` in the transform,
+      so it was not even scale-invariant).
+    * ``arch`` fits a Student-t standardized to UNIT variance; SciPy's ``t`` has
+      variance ``nu / (nu - 2)``. The standardized residual is rescaled by
+      ``sqrt(nu / (nu - 2))`` so the CDF applied here is the distribution the
+      likelihood was actually maximized under.
     """
     est_residuals = returns - mu
-    cond_vol = res.conditional_volatility
-    std_residuals = est_residuals / np.sqrt(cond_vol)
-    return student_t.cdf(std_residuals, nu)
+    std_residuals = est_residuals / res.conditional_volatility
+    return student_t.cdf(std_residuals * np.sqrt(nu / (nu - 2.0)), nu)
 
 
 def fit_garch_t(returns: pd.Series) -> GarchFit:

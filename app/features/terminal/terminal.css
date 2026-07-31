@@ -369,20 +369,21 @@
 .compute-bar-fill.done { background: var(--color-terminal-positive); }
 .compute-clock-caption { display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px; color: var(--color-terminal-secondary); }
 .compute-clock-seconds { font-size: 24px; font-weight: 600; }
-/* Run status (left) + the machine the wall-time was measured on (right). The CPU lives
-   here, not in the panel header: that header is title | MODEL chip | note, and a full chip
-   name wrapped it. Here it also sits beside the seconds it qualifies. */
+/* Run status, then the machine the wall-time was measured on, STACKED. The CPU lives here
+   rather than in the panel header: that header is title | MODEL chip | note, and a full
+   chip name wrapped it. Here it also sits under the seconds it qualifies.
+
+   One row was tried first and lost both facts at once. Chip names vary wildly across
+   machines (Ryzen / Xeon / Apple M-series), and in the desk's narrow model column a status
+   line and a chip name side by side each ran out of room — "reassessing · 3.6s l…" beside
+   "AMD Ryzen 7 5…". Truncating either end throws away the answer to the question the line
+   is there to answer, so neither shares a row now: each takes the full column and reads in
+   full. The tooltip stays as the belt-and-braces for a genuinely absurd chip string. */
 .compute-clock-meta {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
   margin-top: 4px; font-size: 11px; font-family: var(--font-mono);
   color: var(--color-terminal-secondary);
 }
-/* Chip names vary wildly in length across machines (Ryzen / Xeon / Apple M-series), so the
-   label truncates rather than wrapping the row — full string stays in the title tooltip. */
-.compute-clock-cpu {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  min-width: 0; text-align: right; opacity: 0.85;
-}
+.compute-clock-cpu { opacity: 0.85; }
 
 /* Run-duration history: a column strip running as a TAPE — the newest run enters at the
    RIGHT edge and older runs travel left as the session progresses. Replaced a per-row list

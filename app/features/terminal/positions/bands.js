@@ -15,6 +15,12 @@
 // below are those quartiles rounded, and they hold 24.5 / 25.4 / 25.0 / 25.0 percent of the
 // mass — every edge inside the observed range, no band empty.
 //
+// Re-checked against the 2026-07-31 bake, the first on the corrected specification (ERR-04 /
+// ERR-05 / ERR-07): 1259 pooled name-bars, range 0.1002 .. 1.6995, quartiles 0.3964 / 0.6217
+// / 1.2304. The cutoffs below are unchanged and still hold 25.4 / 24.5 / 24.9 / 25.1 percent.
+// The distribution barely moved because the seeded tape and therefore the book are identical;
+// only the correlation and volatility forecasts feeding the split changed.
+//
 // The middle edge moved 0.49 -> 0.62 because the grid did: the previous bake strode five
 // trading days, this one plays one session, so the book is younger and less hedged and the
 // low cluster sits higher. Carrying the old 0.49 forward would have left the second band

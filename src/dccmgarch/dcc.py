@@ -3,7 +3,8 @@
 Extracted from ``App.ipynb`` -> ``DccForecast`` (the ``dcceq`` recursion, the
 ``loglike_norm_dcc_copula`` objective, and the forecast tail). The original leaned
 on module ``global`` state (``Qbar``, ``lastQt``, ``dcceq``); this encapsulates
-that state so nothing leaks between runs. Numerically identical to the baseline.
+that state so nothing leaks between runs. The in-sample recursion is baseline-faithful;
+the forecast tail is not — the original dropped the newest shock from it (see ``fit_dcc``).
 """
 
 from __future__ import annotations
@@ -117,9 +118,14 @@ def ccc_fit(std_resid: pd.DataFrame | np.ndarray) -> DccFit:
     """Constant Conditional Correlation fallback (§3.3 Tier-1).
 
     Freezes correlation at the in-sample average (``a = b = 0``): a well-posed
-    estimate that always exists. **Understates crash tail risk** — correlation
-    cannot spike toward 1 exactly when it does in a crash — so it is operational
-    resilience, not the scientific answer; the pipeline flags the result degraded.
+    estimate wherever a sample correlation matrix is defined — which is not
+    everywhere (a constant series, too few observations, or ``n`` at or above the
+    number of demeaned observations all break it), so this is a broader domain than
+    the DCC optimizer's, not an unconditional one. **Typically understates crash
+    tail risk** — correlation cannot spike toward 1 exactly when it does in a crash
+    — though a static estimate carried out of a stress episode can equally overstate
+    it. Operational resilience, not the scientific answer; the pipeline flags the
+    result degraded.
     """
     trdata, asset_names = _parse_resid(std_resid)
     t_obs, n = trdata.shape
@@ -186,9 +192,11 @@ def fit_dcc(
 
     rt, vecl_rt, last_qt, q_bar = _dcc_recursion(theta, trdata)
 
-    # One-step-ahead forecast. Baseline sets the immediate-disturbance forecast to
-    # zero (the a-term drops), matching the original DccForecast tail exactly.
-    forecast_disturbance = np.zeros((n, n))
+    # One-step-ahead forecast: the SAME recursion one step past the sample, so the
+    # a-term carries the newest observed shock z_T (the original zeroed it, which
+    # discards the most recent co-movement and drags the forecast toward Q_bar early
+    # — worst exactly where correlation is spiking).
+    forecast_disturbance = np.matmul(trdata[[-1]].T, trdata[[-1]])
     qt_forecast = q_bar * (1 - a - b) + a * forecast_disturbance + b * last_qt
     qt_forecast = np.reshape(qt_forecast, (n, n))
     diag = np.sqrt(np.array(np.diag(qt_forecast), ndmin=2))

@@ -345,7 +345,7 @@ def test_a_fitted_bar_is_a_complete_serving_event(prices, calm):
 
     # The payload contract the desk reads. A field lost here is a blank panel, not a crash,
     # so absence is asserted rather than left to the frontend to discover.
-    assert set(event["dcc"]) == {"a", "b", "nu"}
+    assert set(event["dcc"]) == {"a", "b", "nu_marginal_avg"}
     assert len(event["corr"]) == len(UNIVERSE)
     assert len(event["sigma_forecast"]) == len(UNIVERSE)
     assert set(event["marketPrices"]) == set(UNIVERSE)
@@ -379,7 +379,7 @@ def var_result(**overrides) -> VarResult:
         var=100.0,
         converged=True,
         degraded=False,
-        dcc_params={"a": 0.03, "b": 0.95, "nu": 7.0},
+        dcc_params={"a": 0.03, "b": 0.95, "nu_marginal_avg": 7.0},
         corr_spotlight=[[1.0]],
         es=140.0,
         corr_full=[[1.0]],

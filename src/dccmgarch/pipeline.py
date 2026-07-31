@@ -242,10 +242,18 @@ def _reseasonalize_slot(forecast_variance: float, seasonal_factor: float) -> flo
 
 
 def _dcc_params(dcc_fit, garch_fits, portfolio: Portfolio) -> dict:
+    """The two fitted DCC scalars, plus a display summary of the MARGINAL tails.
+
+    ``nu_marginal_avg`` is the absolute-exposure-weighted mean of the per-asset GARCH-t
+    degrees of freedom — a readable one-number summary of how fat the book's tails are.
+    It is NOT a copula parameter: the copula here is Gaussian and has none, and nothing
+    in the model consumes this value (``mc_var`` draws each asset on its own ``nu``).
+    Named for what it is; the per-asset numbers live in ``VarResult.garch_params``.
+    """
     asset_weights = portfolio.weights.to_numpy()
     nus = np.array([g.nu for g in garch_fits])
-    nu_weighted = float(np.round(np.sum(asset_weights * nus), 3))
-    return {"a": dcc_fit.a, "b": dcc_fit.b, "nu": nu_weighted}
+    nu_marginal_avg = float(np.round(np.sum(asset_weights * nus), 3))
+    return {"a": dcc_fit.a, "b": dcc_fit.b, "nu_marginal_avg": nu_marginal_avg}
 
 
 def _corr_spotlight(dcc_fit) -> list:

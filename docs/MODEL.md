@@ -60,7 +60,7 @@ the rows of `corr_full`.
 | `es` | expected shortfall behind the same quantile |
 | `converged` | whether the DCC optimizer converged |
 | `degraded` | whether the constant-correlation fallback was used |
-| `dcc_params` | `a`, `b`, `nu` |
+| `dcc_params` | `a`, `b`, `nu_marginal_avg` |
 | `corr_full` | the forecast correlation matrix, N by N |
 | `corr_spotlight` | the 3 by 3 subset the frontend charts |
 | `r_cond` | condition number of the forecast correlation matrix |
@@ -103,7 +103,7 @@ So the tolerances are chosen to sit between the two scales that matter:
 | spotlight correlations | 0.11 percent | `rtol=1e-2, atol=1e-3` |
 | DCC `a` | 0.34 percent | coarse guard, `abs=0.03` |
 | DCC `b` | up to 85 percent | coarse guard, `abs=0.03` |
-| copula `nu` | 15 to 31 percent | checked as the tail index `1/nu` |
+| average marginal `nu` | 15 to 31 percent | checked as the tail index `1/nu` |
 
 The observable outputs carry the regression lock at roughly twice the worst noise and
 well below the smallest real regression seen. The DCC scalars are weakly identified: in

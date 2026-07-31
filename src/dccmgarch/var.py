@@ -1,4 +1,4 @@
-"""Monte-Carlo one-step-ahead Value-at-Risk (Student-t innovations, DCC covariance).
+"""Monte-Carlo one-step-ahead Value-at-Risk (Gaussian copula, Student-t marginals).
 
 Extracted from ``App.ipynb`` -> ``portfolioVaR``. The only stochastic call in the
 whole core lives here, so this is the single place a ``seed`` is threaded.
@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.stats import norm
+from scipy.stats import t as student_t
 
 from . import DEFAULT_SEED
 from .dcc import DccFit
@@ -23,8 +25,8 @@ class McVarResult:
     """One MC pass, read twice: the VaR quantile and the mean of the tail behind it.
 
     ``es`` costs nothing extra — the simulated portfolio values are already in hand
-    and the original discarded everything but a single quantile. Same draws, same
-    seed, so ``var`` is bit-identical to what the golden master pins.
+    and the original discarded everything but a single quantile. Both are read off the
+    same draws under the same seed, so they can never disagree about the tail.
     """
 
     var: float
@@ -74,10 +76,12 @@ def mc_var(
     Parameters
     ----------
     portfolio
-        The :class:`Portfolio` (positions + prices). The MC-VaR weighting is read
-        from ``portfolio.weights``, so the exposure/weight provenance is explicit.
+        The :class:`Portfolio` (positions + prices). VaR is a dollar figure, so the
+        simulated per-asset returns are priced through the actual signed shares.
     dcc_fit, garch_fits
-        Forecast correlation and per-asset variance forecasts; combined into H_t.
+        Forecast correlation and per-asset variance forecasts; combined into H_t,
+        then split into the copula correlation and the marginal sigmas. ``garch_fits``
+        also carries each asset's own Student-t ``nu`` (the marginal tail).
     mean_returns
         Per-asset expected return in native units, aligned to the portfolio. Only
         used when ``include_expected_returns`` is True (baseline).
@@ -99,25 +103,33 @@ def mc_var(
     short = shares < 0
     shares = np.where(short, shares * (1 + margin_requirement), shares)
 
-    # Single portfolio-level ddof: exposure-weighted average of univariate nus.
-    asset_weights = portfolio.weights.to_numpy()
-    nus = np.array([g.nu for g in garch_fits])
-    ddof_weighted = np.round(np.sum(asset_weights * nus), 3)
-
+    # H_t split back into the two objects the copula needs: per-asset forecast sigma
+    # and the forecast correlation. Derived from H_t rather than read off `dcc_fit`
+    # so a non-finite forecast variance still reaches the Cholesky guard below.
     cov = _forecast_covariance(dcc_fit, garch_fits, return_scale)
+    sigma = np.sqrt(np.diag(cov))
+    corr = cov / np.outer(sigma, sigma)
 
     last_port_value = float(np.sum(prices * shares))
 
     try:
-        cholesky = np.linalg.cholesky(cov)
+        cholesky = np.linalg.cholesky(corr)
     except np.linalg.LinAlgError:
         # Original behavior: non-positive-definite covariance -> VaR unavailable.
         print("Covariance matrix for MCM is not positive definite")
         return McVarResult(var=0.0, es=0.0)
 
+    # The documented model, actually simulated: a GAUSSIAN COPULA carries the
+    # dependence and each asset keeps its OWN Student-t marginal. Correlated normals
+    # -> uniforms -> per-asset standardized-t quantile -> scaled by that asset's
+    # forecast sigma. The original instead mixed independent ordinary-t draws through
+    # the Cholesky factor under one exposure-weighted ddof, which is neither a Gaussian
+    # copula nor a multivariate t, and inflated every covariance by nu / (nu - 2).
+    nus = np.array([g.nu for g in garch_fits]).reshape(n_assets, 1)
     rng = np.random.default_rng(seed)
-    draw = rng.standard_t(ddof_weighted, size=(n_assets, n_sims))
-    corr_draw = np.matmul(cholesky, draw)
+    normal_draw = np.matmul(cholesky, rng.standard_normal(size=(n_assets, n_sims)))
+    unit_t = student_t.ppf(norm.cdf(normal_draw), nus) * np.sqrt((nus - 2.0) / nus)
+    corr_draw = unit_t * sigma.reshape(n_assets, 1)
 
     if include_expected_returns:
         if mean_returns is None:

@@ -108,7 +108,7 @@ def fit_bar(
         "dcc": {
             "a": round(float(result.dcc_params["a"]), 4),
             "b": round(float(result.dcc_params["b"]), 4),
-            "nu": round(float(result.dcc_params["nu"]), 4),
+            "nu_marginal_avg": round(float(result.dcc_params["nu_marginal_avg"]), 4),
         },
         "corr_spotlight": result.corr_spotlight,
         "corr": result.corr_full,

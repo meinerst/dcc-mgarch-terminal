@@ -6,9 +6,11 @@
 //   componentVar_i = x_i (Hx)_i / v * VaR  the shares sum to 1, so these sum to VaR
 //   divEffect_i    = 1 - sign(x_i) * rho(i, portfolio)
 //
-// The split has NO residual because the desk runs zero-drift through an elliptical
-// Student-t draw: VaR = k * sigma_p is then homogeneous of degree 1 in the exposures, so
-// Euler's theorem applies exactly rather than approximately.
+// The split has no residual: the desk runs zero-drift, so VaR is homogeneous of degree 1
+// in the exposures and Euler's theorem applies. The VARIANCE-based weights below are the
+// exact Euler gradient only for an elliptical draw — the core now simulates a Gaussian
+// copula with a per-asset Student-t marginal (var.py), which is not elliptical, so read
+// them as the sigma-proportional split of the portfolio VaR they still sum to exactly.
 //
 // Both outputs are left SIGNED and UNCLAMPED. A negative component VaR and a
 // diversification effect above 1 are the most informative states the book can reach — the

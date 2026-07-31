@@ -48,15 +48,17 @@ class Portfolio:
 
     @property
     def weights(self) -> pd.Series:
-        """Absolute-exposure weights (sum to 1); the VaR ddof weighting.
+        """Absolute-exposure weights (sum to 1); the reporting weights.
 
         Derived from the portfolio's own exposure, so ``portfolio.weights`` makes
         the provenance explicit: weights come *from* the portfolio, never the reverse.
+        The VaR draw itself is per-asset (each name on its own sigma and nu) and does
+        not read these; ``pipeline._dcc_params`` uses them for the ν summary.
 
         Flat-book guard: a portfolio with zero total exposure (e.g. the Option P
         demo before any order arrives) has no exposure to weight, so ``0/0`` would
-        be NaN. Fall back to uniform weights there — the exposure-weighted ddof
-        average stays finite and the VaR itself works out to zero regardless.
+        be NaN. Fall back to uniform weights there — the weighted average stays
+        finite and the VaR itself works out to zero regardless.
         """
         abs_exposure = self.exposure.abs()
         total = abs_exposure.sum()

@@ -20,10 +20,10 @@ export function FitDiagnostics({ latest, riskLive, dccSeries }) {
         <Stat label="DCC β" value={dcc ? num(dcc.b, 4) : "—"} />
         {/* The only tipped stat: alpha and beta are what a reader expects a DCC fit to
             report, but a lone "Student-t ν" reads as a fitted JOINT degrees of freedom,
-            which it is not. */}
+            which it is not — hence the payload key it reads, and the tip. */}
         <Stat
           label="Student-t ν"
-          value={dcc ? num(dcc.nu, 2) : "—"}
+          value={dcc ? num(dcc.nu_marginal_avg, 2) : "—"}
           tip={"How fat the return tails are across the book. Lower = fatter tails = bigger extreme moves expected.\nOne Student-t dof per name, averaged by absolute exposure.\nNot a joint-t parameter — the copula is Gaussian, so this reads the individual tails only."}
         />
       </div>
@@ -31,7 +31,7 @@ export function FitDiagnostics({ latest, riskLive, dccSeries }) {
           lines inside a ~100px column and dropped that stat's value a row below its two
           neighbours. Full-width here, so all three sit on one baseline. */}
       <div className="diagnostics-note">
-        <span className="sym">ν</span> · portfolio ddof, exposure-weighted
+        <span className="sym">ν</span> · marginal ν, exposure-weighted mean
       </div>
       <div className="diagnostics-status">
         {latest == null ? (

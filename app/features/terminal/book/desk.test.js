@@ -177,7 +177,7 @@ describe("risk gating", () => {
     type: "reassess",
     var: 1000,
     held_names: heldNames,
-    dcc: { a: 0.03, b: 0.95, nu: 7 },
+    dcc: { a: 0.03, b: 0.95, nu_marginal_avg: 7 },
     market_ts: 300,
   });
 

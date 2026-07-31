@@ -27,9 +27,11 @@ export default function AbstractSection() {
       <div className="section" style={{ paddingTop: 8 }}>
         <p>
           Financial markets exhibit interdependencies that evolve over time. Static
-          correlation measures assume these relationships are fixed, and therefore
-          understate portfolio risk during the periods of contagion and diversification
-          breakdown that matter most. The original thesis addresses this with the Dynamic
+          correlation measures assume these relationships are fixed, and so misstate
+          portfolio risk during the periods of contagion and diversification breakdown
+          that matter most, typically understating it when correlations rise and
+          overstating it once a stress episode has passed. The original thesis addresses
+          this with the Dynamic
           Conditional Correlation framework of Engle (2002): univariate GARCH(1,1) models
           with Student-t marginals, a Gaussian copula for joint dependence, and a Monte
           Carlo value-at-risk forecast one five-minute step ahead. The forecasts were
@@ -48,18 +50,26 @@ export default function AbstractSection() {
           than the Monte Carlo simulation noise are not treated as findings.
         </p>
         <p>
-          Three results follow. The crash-window failure is reproduced at the dimension of the
-          original portfolio, diagnosed as a numerical saturation in the copula transform
-          rather than an optimizer deficiency, and repaired, so that the window is estimated on
-          all 389 bars in place of 35 and can be scored for the first time. The clustering of
-          exceedances that the added independence test detects is attributed to the treatment
-          of intraday seasonality, since correcting the treatment removes the clustering almost
-          entirely, although the same correction leaves the level of the forecast too low, so
-          that every window breaches substantially more often than expected, for reasons that remain
-          unexplained. It is therefore reported rather than adopted. Convergence is kept
-          distinct from calibration throughout: the repaired model produces a trustworthy
-          estimate on the crash window and still fails its coverage test there, and both
-          statements are reported.
+          Three results follow. The first concerns the crash-window failure, and it is a
+          negative one. The failure is reproduced at the dimension at which it arises, and it is
+          then localized three times in succession: first to circuit-breaker handling and the
+          optimizer, which a pre-registered test falsified; then to a numerical saturation in
+          the copula transform, which a bound was added to contain; and finally, by a later
+          specification audit, to the standardization of that transform, which was itself
+          incorrect. Once the transform is corrected the saturation does not arise, the window
+          estimates on all 389 bars without any of the earlier repairs, and those repairs,
+          although retained, carry no result. The second is that the forecast is severely
+          over-conservative. On the thirty-asset portfolio every window breaches between six and
+          nine times against 19.45 expected, and the unconditional coverage test rejects on
+          every row, before and after the corrections alike. The third identifies the mechanism.
+          The quoted value-at-risk is almost flat across the trading session while the realized
+          tail is not, so exceedances concentrate at the open in every window at both portfolio
+          sizes, and re-seasonalizing the forecast per slot removes the clustering the
+          independence test detects almost entirely while leaving the level of the forecast
+          wrong in a way that remains unexplained. That correction is therefore reported rather
+          than adopted. Convergence is kept distinct from calibration throughout: the corrected
+          model produces a finite, converged forecast on the crash window and still fails its
+          coverage test there, and both statements are reported.
         </p>
       </div>
 

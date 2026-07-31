@@ -57,16 +57,26 @@ export function ComputeClockPanel({
           <span>{statusLine(compute, minNamesForRisk)}</span>
           <span className="compute-clock-seconds">{secs(compute.elapsed)}</span>
         </div>
-        {/* Run status left, the machine that ran it right. The chip sits here rather than
-            in the panel header — a full chip name wrapped the header onto two lines — and
-            it belongs beside the wall-time it qualifies, since the seconds above are only
-            meaningful given the machine. "1 thread" is the honest count, not the marketing
-            core count: the pipeline is Python under the GIL, so the Monte-Carlo and GARCH
-            optimizer loops are single-thread bound and only BLAS calls spill wider. */}
-        <div className="compute-clock-meta">
-          <span>{remainingLine(compute)}</span>
-          {cpu && <span className="compute-clock-cpu" title={`${cpu} · single-threaded`}>{cpu} · 1 thread</span>}
-        </div>
+        {/* Run status on its own line, the machine that ran it on the next. The chip sits
+            here rather than in the panel header — a full chip name wrapped the header onto
+            two lines — and it belongs beside the wall-time it qualifies, since the seconds
+            above are only meaningful given the machine. "1 thread" is the honest count, not
+            the marketing core count: the pipeline is Python under the GIL, so the
+            Monte-Carlo and GARCH optimizer loops are single-thread bound and only BLAS
+            calls spill wider.
+
+            Status and chip shared ONE row until the desk's model column got narrow enough
+            that neither fit: side by side, "reassessing · 3.6s left" and a full chip name
+            each lost their tail to an ellipsis, and the two facts a reader is here for —
+            how long is left, and what hardware that time is measured on — were both
+            unreadable at once. Stacked, each gets the full column width and neither
+            truncates on any chip name short of absurd. */}
+        <div className="compute-clock-meta">{remainingLine(compute)}</div>
+        {cpu && (
+          <div className="compute-clock-meta compute-clock-cpu" title={`${cpu} · single-threaded`}>
+            {cpu} · 1 thread
+          </div>
+        )}
 
         <div className="panel-subhead">Run-duration history</div>
         <RunHistoryStrip history={history} />

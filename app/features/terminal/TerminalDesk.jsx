@@ -270,13 +270,24 @@ export function TerminalDesk() {
           <div className="terminal-content-area">
             {error && <div className="degraded-banner">Failed to load scenario: {error}</div>}
             {degraded && <DegradedBanner />}
-            {/* Before START nothing has been fetched, so there is no loading to report — the
-                desk shows its own empty frame instead of a note about a run nobody asked for. */}
-            {!started && !state && <SkeletonDesk />}
-            {started && !state && !error && (
-              <div className="terminal-panel-note">
-                {isLiveMode ? `starting live session · ${scenario}…` : `loading ${scenario}…`}
-              </div>
+            {/* The skeleton holds the desk until a payload lands, INCLUDING the fetch that
+                START kicks off. Unmounting it on `started` alone left the content area empty
+                for the length of that fetch, and the desk flashed white between the grey
+                skeleton and the cards. The frame is the same box in both states, so there is
+                no interval where the reader sees bare page.
+
+                Before START there is nothing to report — the empty frame IS the message. Once
+                a run has been asked for, the note names what is being waited on and rides
+                above the frame rather than replacing it. */}
+            {!state && (
+              <>
+                {started && !error && (
+                  <div className="terminal-panel-note">
+                    {isLiveMode ? `starting live session · ${scenario}…` : `loading ${scenario}…`}
+                  </div>
+                )}
+                <SkeletonDesk />
+              </>
             )}
             {state && (
               <>

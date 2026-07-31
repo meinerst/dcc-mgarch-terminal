@@ -150,9 +150,9 @@ export function createDesk({
   // longer exists — and the compute clock's idle stretches are exactly where nothing could
   // be done about it, because there is no room for a second fit.
   //
-  // What CAN be done costs microseconds. VaR = k * sigma_p is homogeneous of degree 1 in
-  // the exposures under this desk's zero-drift elliptical draw (the same property that
-  // makes the Euler split exact — see riskDecomposition.js), so dividing a landed VaR by
+  // What CAN be done costs microseconds. VaR is homogeneous of degree 1 in the exposures
+  // under this desk's zero-drift draw, and VaR = k * sigma_p holds up to the marginals'
+  // non-ellipticity (see riskDecomposition.js), so dividing a landed VaR by
   // the portfolio sigma of the book it was priced on recovers the model's own quantile
   // multiplier `k`. Multiplying `k` by the LIVE book's sigma reprices that forecast onto
   // the current positions.

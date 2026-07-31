@@ -85,14 +85,24 @@ export default function OutlookSection() {
 
       <div className="divider" />
 
-      <h3>Degrees of freedom at the portfolio level</h3>
+      <h3>Dependence in the tail</h3>
       <p>
         The original specifies the portfolio's Student-t degrees of freedom as a weighted average
-        of the per-asset values fitted univariately. That is a crude choice rather than an
-        outright error, which is why it is not corrected above. It is still worth testing. A
-        weighted average of marginal tail indices is not the tail index of the portfolio, and a
-        direct portfolio-level fit would establish whether the difference matters at the
-        five-minute horizon.
+        of the per-asset values fitted univariately, and applies that single parameter to the
+        joint draw. This was originally set aside as a crude choice rather than an error. The
+        specification audit established that it was neither: the draw it belonged to was not a
+        Gaussian copula, and the averaged parameter went with it when the simulation was
+        corrected. Each asset now carries its own fitted tail through its own quantile function,
+        and the single number the terminal still displays is an exposure-weighted mean of those
+        marginal values, retained for display and used in no computation.
+      </p>
+      <p>
+        What remains open is the dependence structure rather than the marginals. A Gaussian copula
+        has no tail dependence: extreme co-movements become asymptotically independent, which is
+        the opposite of what a crash week exhibits. A Student-t copula, which carries a single
+        dependence parameter estimated by a copula likelihood rather than borrowed from the
+        marginals, is the natural comparison, and it would be a change of model rather than of
+        implementation.
       </p>
 
       <div className="divider" />
@@ -100,9 +110,10 @@ export default function OutlookSection() {
       <h3>An estimator that carries a large book</h3>
       <p>
         The specification estimates a full unrestricted correlation matrix from a window of 390
-        bars, which places an upper bound on the number of instruments it can carry that has
-        nothing to do with how fast the code runs. Past a few hundred instruments the estimate is
-        ill-conditioned, and past 390 it is singular, as set out under Scaling in portfolio size.
+        bars, which yields 389 returns, which places an upper bound on the number of instruments
+        it can carry that has nothing to do with how fast the code runs. Past a few hundred
+        instruments the estimate is ill-conditioned, and at 389 instruments or more it is
+        singular, as set out under Scaling in portfolio size.
         A book of a few thousand instruments therefore needs an estimator that asks for less: a
         small number of common drivers from which the matrix is rebuilt, or an estimate pulled
         toward a simple target so that it stays invertible. Either is a change of model rather

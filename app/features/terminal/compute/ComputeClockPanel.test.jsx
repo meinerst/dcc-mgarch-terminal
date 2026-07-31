@@ -88,7 +88,7 @@ describe("ComputeClockPanel", () => {
       <ComputeClockPanel
         {...props}
         riskLive
-        latest={{ dcc: { a: 0.0312, b: 0.9511, nu: 7.25 }, degraded: false }}
+        latest={{ dcc: { a: 0.0312, b: 0.9511, nu_marginal_avg: 7.25 }, degraded: false }}
       />
     );
 

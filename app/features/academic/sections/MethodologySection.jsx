@@ -77,17 +77,35 @@ export default function MethodologySection() {
         <div className="eq-label">Normalization to a correlation matrix.</div>
       </div>
       <p>
-        In the third stage the residuals are mapped through a Gaussian copula and 5,000 Monte
-        Carlo draws are simulated one five-minute step ahead. The fifth percentile of the
-        simulated portfolio profit and loss is the 95% value-at-risk, reported as a loss
-        magnitude against the current mark. This one-step-ahead
-        intraday forecast, rather than the original end-of-day view, is the quantity the terminal
-        reassesses continuously.
+        In the third stage the dependence structure and the marginal tails are combined by a
+        Gaussian copula and 5,000 Monte Carlo draws are simulated one five-minute step ahead.
+        Correlated standard normal variates are drawn through the Cholesky factor of the
+        forecast correlation matrix R<sub>t</sub>, mapped to uniforms by the normal
+        distribution function, and then mapped back through each asset's own Student-t
+        quantile function, standardized to unit variance and scaled by that asset's forecast
+        volatility. The fifth percentile of the simulated portfolio profit and loss is the 95%
+        value-at-risk, reported as a loss magnitude against the current mark. This
+        one-step-ahead intraday forecast, rather than the original end-of-day view, is the
+        quantity the terminal reassesses continuously.
+      </p>
+      <p>
+        Two points of honesty attach to that description. It describes the generator as it now
+        stands: a specification audit found that the simulation previously in place was neither
+        a Gaussian copula nor a multivariate Student-t, but independent ordinary-t variates
+        mixed through a Cholesky factor under a single exposure-weighted degrees-of-freedom
+        parameter. Numbers published before that correction were produced by a different
+        generator and are not comparable with the ones reported here. And a Gaussian copula has
+        no degrees-of-freedom parameter of its own: the single ν the terminal displays is an
+        exposure-weighted mean of the univariate marginal ν, carried for display only.
       </p>
       <p>
         The Student-t marginals, the Gaussian copula, the Kupiec coverage statistic and the
-        Taylor and Xu seasonal adjustment are inherited from the original study, which derives
-        each of them. They are not re-derived here; the thesis is linked from the abstract above.
+        seasonal adjustment are inherited from the original study, which derives each of them.
+        They are not re-derived here; the thesis is linked from the abstract above. The seasonal
+        adjustment is best described as a short-window estimator in the spirit of Taylor and Xu
+        (1997) rather than as their estimator: each of the 78 intraday slot factors is estimated
+        from just five observations on a rolling five-day window, so the factors themselves are
+        noisy, and that noise is carried into anything built on them.
       </p>
 
       <div className="divider" />
@@ -109,19 +127,27 @@ export default function MethodologySection() {
         </div>
       </div>
       <p>
-        The second addition is numerical. On limit-move residuals the Student-t probability
-        integral transform saturates at exactly zero or one in double precision. The inverse
-        normal transform of one is infinite. Therefore a single saturated cell makes every
-        downstream correlation non-finite. The transform is now bounded away from its endpoints
-        before it is inverted. Wherever the transform is already interior, the bound leaves the
-        value unchanged.
+        The second addition is numerical, and it is retained as a guard rather than as a repair.
+        On the uncorrected specification the Student-t probability integral transform saturated at
+        exactly zero or one in double precision on limit-move residuals. The inverse normal
+        transform of one is infinite, so a single saturated cell made every downstream correlation
+        non-finite. The transform is bounded away from its endpoints before it is inverted, and
+        wherever it is already interior the bound leaves the value unchanged. Results reports why
+        this is no longer the operative fix: the saturation was a consequence of a
+        mis-standardized transform, and under the corrected standardization the transform reaches
+        neither endpoint on any bar of the window it was built for. The bound is not thereby
+        inert, since the corrected transform still produces values below the clamp threshold and
+        the clamp still binds on those, but it no longer prevents a failure, and the configuration
+        with it and the configuration without it produce the same exceedances. It is kept because
+        the domain violation it guards against is real in principle, not because it is carrying a
+        result.
       </p>
       <div className="ac-eq">
         <div className="eq">û = min(max(u, ε), 1 − ε),&nbsp;&nbsp; ε = 10<sup>−6</sup></div>
         <div className="eq-num">(6)</div>
         <div className="eq-label">
-          Bounded probability integral transform, applied before the inverse normal step. This is
-          the substantive repair on the crash window.
+          Bounded probability integral transform, applied before the inverse normal step. Retained
+          as a domain guard; under the corrected standardization it prevents no failure.
         </div>
       </div>
 
@@ -184,9 +210,12 @@ export default function MethodologySection() {
           are themselves results. On the four non-crash windows only the expected-returns switch is
           thrown, so the measured difference against the baseline is attributable to that change
           alone. The three-asset crash column predates the bounded transform and carries the
-          constant-correlation fallback instead. The thirty-asset column is the one the convergence
-          claim rests on, and it runs with the fallback switched off, so a converged bar is a
-          genuinely converged bar and not a labelled substitute. The terminal keeps the fallback on,
+          constant-correlation fallback instead. The thirty-asset column was designed as the one
+          the convergence claim would rest on, and it runs with the fallback switched off so that a
+          converged bar is a genuinely converged bar and not a labelled substitute. That design
+          outlived the claim: under the corrected specification the baseline converges on every bar
+          too, so the column now documents a configuration rather than carrying a result. The
+          terminal keeps the fallback on,
           since a live desk that produces no number at all is worse than one that produces a number
           marked as degraded. The seasonality switch is off everywhere; it was measured on its own
           phase and not adopted.

@@ -20,8 +20,12 @@ from dccmgarch.portfolio import Portfolio
 # --- 3-asset spotlight: the methodology yardstick --------------------------------
 # Long-only, same names and shares the golden master pins, so the first rolling step
 # reproduces the golden VaR exactly (a free self-check). The scoring claims it
-# carries — conditional coverage, the expected-returns delta — live in the scalar hit
-# sequence, which is dimension-invariant, so three names are enough for them.
+# carries — conditional coverage, the expected-returns delta — are computed from a
+# scalar hit sequence, and those tests consume such a sequence at any N. The hit
+# sequence ITSELF is not dimension-invariant: change the portfolio and the exceedances
+# change. Three names are the spotlight because they are the book the golden master
+# pins and the desk renders, not because N does not matter — which is exactly why the
+# crash claim had to be re-tested at N=30 (research/stress30/).
 #
 # Identified by POSITION in the universe, not by symbol: the bar files are the single
 # source of truth for the names (see data._read_universe), so a hardcoded symbol here

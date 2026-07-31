@@ -17,8 +17,9 @@ that PC, and that the drift splits sharply by quantity:
     pinned tight at RTOL = 1e-2: ~2x above the worst noise, yet ~25x below the
     smallest real regression signal (the 26 % GARCH break in REPRODUCIBILITY.md).
 
-  * DCC scalar params (a, b, copula nu) are weakly identified and NOT reproducible
-    cross-machine — b drifts up to 85 % and nu 15-31 % in low-persistence windows,
+  * The DCC scalar params (a, b) and the average marginal nu are weakly identified
+    and NOT reproducible cross-machine — b drifts up to 85 % and nu 15-31 % in
+    low-persistence windows,
     where they sit on flat likelihood ridges — while the correlation path they
     produce stays stable. They are guarded coarsely (not pinned); see the body.
 
@@ -59,7 +60,7 @@ def test_golden_master(scenario):
     )
 
     # DCC scalar params are weakly identified: in low-persistence windows (volatile3,
-    # a+b~0.03) the persistence b and the copula d.o.f. nu sit on flat likelihood
+    # a+b~0.03) the persistence b and the marginal d.o.f. nu sit on flat likelihood
     # ridges and are NOT reproducible across machines (b drifts up to 85 %, nu 15-31 %;
     # see REPRODUCIBILITY.md) even though the correlation path they produce is stable.
     # So guard them coarsely against gross breakage rather than pinning them — the
@@ -67,7 +68,9 @@ def test_golden_master(scenario):
     # tail index 1/nu (nu itself is near-unidentified once the fitted tail is ~Gaussian).
     assert result.dcc_params["a"] == pytest.approx(exp_dcc["a"], abs=0.03)
     assert result.dcc_params["b"] == pytest.approx(exp_dcc["b"], abs=0.03)
-    assert 1.0 / result.dcc_params["nu"] == pytest.approx(1.0 / exp_dcc["nu"], abs=2e-2)
+    assert 1.0 / result.dcc_params["nu_marginal_avg"] == pytest.approx(
+        1.0 / exp_dcc["nu_marginal_avg"], abs=2e-2
+    )
 
 
 def test_scenario_indices_match_dates():

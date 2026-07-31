@@ -77,11 +77,15 @@ export default function CritiqueSection() {
       <h3>Expected returns entered the value-at-risk</h3>
       <p>
         The diversification effect of the original study (Figure 12) added expected returns to
-        the Monte Carlo draw before the loss quantile was taken. A drift term therefore entered
-        a dispersion measure. Over a five-minute horizon that term is negligible against
-        volatility, and its sign biases the result, since a positive drift understates the loss
-        quantile. The text of the original concedes the point on page 35. The application
-        retains the error regardless.
+        the Monte Carlo draw before the loss quantile was taken. Value-at-risk is a conditional
+        quantile of the loss distribution, not a dispersion measure, so a correctly estimated
+        conditional mean does belong in that distribution in principle. The objection is
+        empirical rather than definitional. Over a five-minute horizon an estimated drift is
+        negligible against volatility and is estimated with very little precision, so carrying
+        it imports estimation noise for no benefit, and its sign biases the result in the
+        forgiving direction, since a positive drift understates the loss quantile. Zero drift is
+        the more robust choice at this horizon. The text of the original concedes the point on
+        page 35. The application retains the term regardless.
       </p>
       <p>
         The value-at-risk is now taken on the zero-drift distribution. The change is a pure
@@ -117,8 +121,12 @@ export default function CritiqueSection() {
         into. And the probability integral transform is bounded before it is inverted.
       </p>
       <p>
-        Only the third turned out to matter. The first diagnosis was wrong, and Results reports
-        how that was found.
+        None of the three turned out to carry the result. The first diagnosis was wrong, and the
+        third treated a symptom. A later specification audit located the actual cause in the
+        probability integral transform itself, which was mis-standardized, so that the
+        saturation the bound was added to contain does not arise once the transform is correct.
+        All three changes are retained, and none of them is load-bearing. Results reports how
+        that was found, since the sequence is more informative than the conclusion.
       </p>
 
       <h3>Intraday seasonality was reinstated before estimation</h3>
