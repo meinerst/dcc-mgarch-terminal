@@ -4,7 +4,7 @@
 //   research/stress30/scoreboard.csv + exhibit.md         Table 3
 //   research/findings_log.md EXP-02                       Table 5, the seasonality prose
 //   research/timing.json                                  Table 6, N=3 rows (389 cycles)
-//   single-process 40-cycle re-measurement, post-correction   Table 6, N=30 rows
+//   research/stress30/timing.json                          Table 6, N=30 rows (389 cycles)
 //   research/ERRATA.md ERR-01 / ERR-06                    bucket figures, saturation
 //
 // ALL figures were regenerated on the corrected specification (ERR-04 PIT standardization,
@@ -88,21 +88,34 @@ const SEASONAL_ROWS = [
   { s: "volatile3", before: 12, after: 51, ind: "0.70 → 0.10", cc: "4.16 → 38.10" },
 ];
 
-// N=3 rows: research/timing.json, medians over all 389 cycles.
-// N=30 rows: a single-process 40-cycle re-measurement on an idle machine, taken after the
-// specification corrections because the committed stress30/timing.json predates them and
-// the parallel stress driver deliberately writes no honest timing. 40 cycles is ample for a
-// median and the truncation is stated in the footnote.
+// N=3 rows: research/timing.json, medians over all 389 cycles. Untouched by the 2026-08-01
+// re-measurement, which only run_baseline writes and which did not re-run.
+//
+// N=30 rows: research/stress30/timing.json, the single-process grind of 2026-08-01, medians
+// over all 389 cycles. These replaced a 40-cycle truncated measurement; that caveat is gone
+// because the roll is now complete, and a DIFFERENT one takes its place.
+//
+// THE N=30 CLOCK IS CONTENDED, and the footnote says so. timing.json is bimodal and the modes
+// track wall-time rather than bars: the baseline crash pass splits 155 cycles at median 3.42 s
+// against 234 at 6.84 s, arriving in contiguous blocks (144 slow, then 46 fast, then 50 slow).
+// It is not the model. Across the boundary at bar 143->144 the time halves while r_cond RISES
+// (121.9 -> 124.4) and every step converges in both modes; and on the exact bars where the
+// baseline ran fast the fixed phase ran SLOW (16.18 s against 12.04 s), the opposite sign to
+// any per-bar property. Each phase was contended during a different stretch of one overnight
+// run. Publish the medians, disclose the contention, and do not quote the fix-on / fix-off
+// RATIO as clean. Re-measuring on a verified-idle machine is optional and was declined by the
+// owner: a cycle median is a timing statistic, not a coverage claim.
+//
 // The three volatile windows at three assets are omitted (medians 1.01 to 1.02, inside the
 // band the two rows shown already span) and that omission is stated in the footnote.
 const TIMING_ROWS = [
   { n: 3, w: "calm", fix: "off", med: "1.10", max: "1.75" },
   { n: 3, w: "crash", fix: "off", med: "0.87", max: "1.48" },
   { n: 3, w: "crash", fix: "on", med: "1.70", max: "5.55" },
-  { n: 30, w: "calm", fix: "off", med: "6.32", max: "7.16" },
-  { n: 30, w: "calm", fix: "on", med: "10.77", max: "25.34" },
-  { n: 30, w: "crash", fix: "off", med: "6.05", max: "6.44" },
-  { n: 30, w: "crash", fix: "on", med: "9.36", max: "18.34" },
+  { n: 30, w: "calm", fix: "off", med: "6.12", max: "8.84" },
+  { n: 30, w: "calm", fix: "on", med: "10.68", max: "29.44" },
+  { n: 30, w: "crash", fix: "off", med: "6.31", max: "11.80" },
+  { n: 30, w: "crash", fix: "on", med: "14.13", max: "31.71" },
 ];
 
 // Re-scored on the corrected core. Prediction 5 was registered against a pre-correction
@@ -562,17 +575,20 @@ export default function ResultsSection() {
           </table>
         </div>
         <p className="ac-table-note">
-          <span className="ac-table-note-label">Note.</span> The three-asset rows are medians over
-          all 389 cycles of each window. The thirty-asset rows are a separate single-process
-          measurement over 40 cycles, taken on an idle machine after the specification
-          corrections, since the earlier thirty-asset timing predates them and the parallel
-          stress driver records no honest timing by design. A cycle median is a timing statistic
-          rather than a coverage claim, so the shorter roll costs precision and not validity.
-          Before the corrections the thirty-asset crash row read 1.68 seconds, but only because
-          the estimation abandoned early on most of its bars; now that every bar estimates, it is
-          comparable with the others. The three volatile windows at three assets are omitted;
-          their medians of 1.01 to 1.02 seconds fall inside the band the two rows shown already
-          span.
+          <span className="ac-table-note-label">Note.</span> Both blocks are medians over all 389
+          cycles of each window, each from a single-process run, since the parallel stress driver
+          records no honest timing by design. The thirty-asset run was not alone on its machine
+          throughout: its per-cycle times are bimodal, and the two modes follow wall-clock rather
+          than bars, so each phase was slowed over a different stretch of the run. The medians and
+          maxima below therefore blend a contended machine with an uncontended one, and the ratio
+          between the corrected and uncorrected rows should not be read as a clean cost of the
+          corrections. A cycle median is a timing statistic rather than a coverage claim, so the
+          contention costs precision and not validity, and none of the coverage results on this
+          page depend on it. Before the corrections the thirty-asset crash row read 1.68 seconds,
+          but only because the estimation abandoned early on most of its bars; now that every bar
+          estimates, it is comparable with the others. The three volatile windows at three assets
+          are omitted; their medians of 1.01 to 1.02 seconds fall inside the band the two rows
+          shown already span.
         </p>
       </div>
       <p>
@@ -580,22 +596,29 @@ export default function ResultsSection() {
         the twenty-second refresh interval of the original application is better read as an
         accommodation of the true cost than as a design choice. An earlier version of this section
         reported that cycle time rises with stress, so that the forecast would be at its most
-        stale precisely when it matters most. That is withdrawn. It rested on a thirty-asset crash
-        measurement taken while the estimation was abandoning early on most of its bars. Measured
-        on the corrected specification, the crash window is slightly cheaper than the calm window
-        at thirty assets in both configurations, at 6.05 seconds against 6.32 and 9.36 against
-        10.77. Stress does not systematically raise the cost of a cycle here.
+        stale precisely when it matters most. That is withdrawn, and it stays withdrawn. It rested
+        on a thirty-asset crash measurement taken while the estimation was abandoning early on most
+        of its bars. Measured on the corrected specification and without the repairs, the two
+        windows are indistinguishable at thirty assets, at 6.31 seconds on the crash against 6.12
+        on the calm. With the repairs the crash window is the more expensive of the two, at 14.13
+        against 10.68, but that gap is not claimed here: it is the comparison most exposed to the
+        contention described under the table, since the two phases were slowed over different
+        stretches of the same run. Re-asserting a withdrawn claim on a contended clock would be
+        worse than leaving it withdrawn, so the honest statement is that this measurement does not
+        settle whether stress raises the cost of a cycle.
       </p>
       <p>
         The repairs, on the other hand, are not free, and this is the one place their cost is
-        visible. On the thirty-asset calm control they raise the median cycle from 6.32 to 10.77
-        seconds, an increase of about 70%, and on the crash window from 6.05 to 9.36, about 55%.
-        At three assets the proportional cost is higher still, from 0.87 seconds to 1.70 on the
-        crash. Since Table 3 shows the same repairs changing no scored outcome, that is the
-        cleanest statement of the null: between 55 and 95 percent of the cycle is being spent on
-        machinery which, under the corrected specification, buys nothing measurable. It is
-        retained on the argument that a guard against a real domain violation is worth keeping,
-        not on any evidence that it is currently doing work.
+        visible. On the thirty-asset calm control they raise the median cycle from 6.12 to 10.68
+        seconds, an increase of about 75%, and on the crash window from 6.31 to 14.13, which is
+        larger again but carries the caveat above. At three assets the cost is of the same order,
+        from 0.87 seconds to 1.70 on the crash. Put as a share rather than an increase, the added
+        machinery accounts for somewhere between two-fifths and roughly half of a corrected cycle.
+        Since Table 3 shows the same repairs changing no scored outcome, that is the cleanest
+        statement of the null: a large fraction of every cycle is spent on machinery which, under
+        the corrected specification, buys nothing measurable. It is retained on the argument that a
+        guard against a real domain violation is worth keeping, not on any evidence that it is
+        currently doing work.
       </p>
 
       <div className="divider" />
@@ -603,7 +626,7 @@ export default function ResultsSection() {
       <h3>Scaling in portfolio size</h3>
       <p>
         Two portfolio sizes were timed, and only two. Between them a tenfold increase in the number
-        of assets costs about six times the compute, at 1.10 seconds against 6.32 on the calm
+        of assets costs about six times the compute, at 1.10 seconds against 6.12 on the calm
         window without the repairs. That is sublinear, since a tenfold increase in input buys
         roughly a sixfold increase in cost, and it should not be read as
         encouraging. At these sizes a cycle is dominated by costs that do not grow with the
@@ -616,8 +639,8 @@ export default function ResultsSection() {
         n(n−1)/2, which is 435 for the Dow-30 and close to two million for a book of two thousand
         instruments. The DCC recursion touches every one of them at every bar, so that stage grows
         with the square of the count, while the factorization required to draw correlated Monte
-        Carlo paths grows with its cube. Only the marginal fits grow linearly. A cycle of nine to eleven
-        seconds at thirty assets therefore constrains a cycle at two thousand very weakly.
+        Carlo paths grows with its cube. Only the marginal fits grow linearly. A cycle of eleven to
+        fourteen seconds at thirty assets therefore constrains a cycle at two thousand very weakly.
       </p>
       <p>
         A harder limit arrives before that one. Each estimate is taken on a window of 390
