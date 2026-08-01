@@ -47,3 +47,66 @@ export function scheduleOrders(orders, openSeconds) {
     .map((order) => ({ ...order, clock: openSeconds + order.market_ts }))
     .sort((a, b) => a.market_ts - b.market_ts);
 }
+
+// ---------------------------------------------------------------------------
+// Progress estimation — how full the compute bar looks while a fit is in flight.
+//
+// SHARED ON PURPOSE, and this is the whole reason it moved here. A recording knows
+// every duration up front, so the canned engine used to pace the bar off the recorded
+// `compute_seconds` of the fit currently running. That produced a desk no live desk can
+// be: a countdown accurate to the tenth of a second, a fill that lands on exactly 100%
+// every time, and — because the estimate was never wrong — the panel's "over estimate"
+// state was unreachable in the deployed demo. Crash fits are meant to read as
+// unpredictably expensive; predicting them perfectly is the opposite of the exhibit.
+//
+// So the recorded duration now decides only WHEN a fit lands. How full the bar looks is
+// estimated from fits already finished, identically in both engines.
+//
+// The seconds displayed are always real elapsed. Only the FILL uses this.
+
+// The target before anything has been measured. Crash fits are materially slower than
+// calm ones (the optimizer works harder on a stressed correlation), so one shared guess
+// made the crash bar sprint to the cap and sit there.
+const FIRST_ESTIMATE = { calm: 10, crash: 25 };
+const FIRST_ESTIMATE_FALLBACK = 10;
+
+// A single outlier run (a bad optimizer start) would poison the next bar's pacing, so
+// the target is the median of recent runs rather than the last one.
+const ESTIMATE_WINDOW = 3;
+
+// The fill NEVER reaches full while a fit is in flight. The target is an estimate, so an
+// overrunning run would otherwise show a full — and, in the panel, green — bar while the
+// model is still grinding, claiming a completion that has not happened. Capping short
+// keeps full-and-green as the exclusive signal of a genuinely landed fit.
+export const PROGRESS_CAP = 0.97;
+
+function median(values) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/**
+ * Paces the compute bar from durations already observed.
+ *
+ * `record` takes whatever each engine can honestly know once a fit is OVER — the live
+ * engine's browser round trip, the recorded engine's landed duration — never a duration
+ * belonging to a fit still running or still to come.
+ */
+export function createProgressEstimator(scenario) {
+  const first = FIRST_ESTIMATE[scenario] ?? FIRST_ESTIMATE_FALLBACK;
+  const recent = [];
+  return {
+    record(seconds) {
+      if (!Number.isFinite(seconds) || seconds <= 0) return;
+      recent.push(seconds);
+      if (recent.length > ESTIMATE_WINDOW) recent.shift();
+    },
+    target() {
+      return recent.length ? median(recent) : first;
+    },
+    /** Whether anything has been measured yet — the idle row shows nothing until it has. */
+    measured() {
+      return recent.length > 0;
+    },
+  };
+}

@@ -5,7 +5,10 @@
 //                  this engine only ever COMPARES against recorded stamps; it never
 //                  derives when something should fire.
 //   Compute clock  the honest, unaccelerated wall-time each reassessment took. Never
-//                  accelerated — that is the terminal's whole thesis.
+//                  accelerated — that is the terminal's whole thesis. The recording's
+//                  durations say when a fit LANDS; the progress bar is estimated off fits
+//                  already finished, the same way the live engine does it, so a replay
+//                  cannot predict itself better than a real desk can (clock.js).
 //
 // SKIP TO LATEST. A bar arrives when the market clock crosses its stamp, and the model
 // fits one bar at a time for its recorded duration. If more bars arrive mid-fit, the model
@@ -19,7 +22,15 @@
 // decisions it already made, stamped.
 
 import { createDesk } from "../book/desk";
-import { LATCH_SECONDS, clamp01, marketHorizon, parseClock, scheduleOrders } from "./clock";
+import {
+  LATCH_SECONDS,
+  PROGRESS_CAP,
+  clamp01,
+  createProgressEstimator,
+  marketHorizon,
+  parseClock,
+  scheduleOrders,
+} from "./clock";
 
 // Fail loudly on a payload predating the market-clock timeline rather than half-playing
 // it. Without this an old recording plays a deceptively plausible desk: bars land so the
@@ -42,9 +53,13 @@ export function createPlayback(payload, onState) {
 
   const {
     spotlight_assets, replay_factor = 25, sec_per_bar = null, session = null,
-    subset = null, min_names_for_risk = 3, events, cpu = null,
+    subset = null, min_names_for_risk = 3, events, cpu = null, scenario = null,
   } = payload;
 
+  // Paced from fits that have already LANDED, exactly as the live engine paces from round
+  // trips it has already seen. The recording's own durations are used for when a fit ends,
+  // never for how full the bar looks while it runs — see clock.js.
+  const estimator = createProgressEstimator(scenario);
   const openSeconds = parseClock(session?.open);
   const orders = scheduleOrders(events.filter((e) => e.type === "order"), openSeconds);
 
@@ -125,6 +140,7 @@ export function createPlayback(payload, onState) {
     const bar = bars[currentBar];
     desk.landReassess(bar.event, bar.bookGross ?? null, bar.bookExposures ?? null);
     desk.pushHistory(bar.index, bar.marketTs, "computed", bar.computeSeconds);
+    estimator.record(bar.computeSeconds); // only now that this fit is over
     landedSeconds = bar.computeSeconds;
     landedUntil = elapsed + LATCH_SECONDS; // hold the frame; the next fit still starts now
     currentBar = null;
@@ -161,21 +177,25 @@ export function createPlayback(payload, onState) {
       };
     }
     if (busyUntilReal != null) {
-      // The recorded target is EXACT, so this path needs no cap and no estimate: the bar
-      // can only reach full when the run is genuinely over.
-      const target = bars[currentBar].computeSeconds;
+      // The in-flight bar's own recorded duration is NOT read here. It decides
+      // `busyUntilReal` — when this fit lands — and nothing about the fill.
       const runElapsed = Math.max(0, elapsed - busySinceReal);
+      const target = estimator.target();
       return {
         running: true, idle: false, landed: false, done: false, dead: false,
-        elapsed: Math.min(runElapsed, target), target,
-        progress: target > 0 ? clamp01(runElapsed / target) : 1, waitSeconds: 0,
+        elapsed: runElapsed, target,
+        // Capped: an overrunning run keeps creeping but never claims completion.
+        progress: target > 0 ? Math.min(clamp01(runElapsed / target), PROGRESS_CAP) : PROGRESS_CAP,
+        waitSeconds: 0,
       };
     }
     // Idle: the previous run finished early, or the bar was dead. Wait for the next bar.
+    // `waitSeconds` is the market clock, which both engines know ahead of time from the bar
+    // grid; the compute target stays an estimate off past fits.
     const next = nextBar < bars.length ? bars[nextBar] : null;
     return {
       running: false, idle: true, landed: false, done: false, dead: deadState,
-      elapsed: 0, target: next ? next.computeSeconds : 0, progress: 0,
+      elapsed: 0, target: estimator.measured() ? estimator.target() : 0, progress: 0,
       waitSeconds: next ? Math.max(0, next.arriveReal - elapsed) : 0,
     };
   }

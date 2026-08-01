@@ -73,13 +73,18 @@ rests on. `LR_ind` runs on the hit sequence Kupiec already produces, so the full
 `LR_uc` / `LR_ind` / `LR_cc` triple costs no refit and no new simulation. The
 implementation is in `backtest/stats.py` and works on any hit sequence.
 
-**Convergence under market stress.** On a March 2020 window the original optimizer
-collapsed: as correlations spike toward one, the forecast correlation matrix approaches
-singular and SLSQP fails. Halt-masking plus a reparameterized optimizer took a 30-asset
-grind from 35 of 389 steps converging to 389 of 389, with the conditioning diagnostic
-`r_cond` falling from infinite to 125. A calm control at the same dimension converges
-fully both before and after, which is what shows the failure belonged to the stress
-window and not to the number of assets.
+**A headline finding, reported dead.** On a March 2020 window the original collapsed: a
+30-asset grind estimated on 35 of 389 steps, with the conditioning diagnostic `r_cond`
+infinite. That failure is real and reproducible, and this project was built around
+repairing it with halt-masking and a reparameterized optimizer. The repair was not what
+fixed it. The specification audit found the collapse was driven by the standardization of
+the Student-t probability integral transform, which saturated 1,572 transform cells
+across 354 of the 389 crash steps and sent them to infinity through `norm.ppf`. With the
+transform corrected, the window estimates on all 389 bars with halt-masking, the robust
+optimizer and the PIT clamp all **off**, and switching them on reproduces the same hit
+sequence exactly. The repairs are retained because they are cheap and correct, and no
+result rests on them. What the crash window now shows is not a convergence failure but the
+over-conservative forecast described under "An invitation" above.
 
 ## Two clocks, and only one is compressed
 
@@ -111,9 +116,9 @@ what makes a before-and-after comparison mean anything.
 ## Tests
 
 ```
-pytest -q                 # 55 tests, including the golden master
+pytest -q                 # 62 tests, including the golden master
 pytest -m slow            # 2 more that each run a real fit
-cd app && npx vitest run  # 152 frontend tests
+cd app && npx vitest run  # 176 frontend tests
 ```
 
 The golden masters pin the model's observable outputs under a fixed seed. They are

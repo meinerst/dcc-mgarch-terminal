@@ -14,39 +14,25 @@
 //
 // The COMPUTE CLOCK is honest by construction: elapsed is real time since the fetch
 // started. Only the progress bar's *fill* needs a target, which cannot be known until the
-// fit returns — see `estimateTarget` and `PROGRESS_CAP`.
+// fit returns — see `createProgressEstimator` and `PROGRESS_CAP` in clock.js, which the
+// recorded engine now shares so neither mode paces its bar better than the other.
 
 import { createDesk } from "../book/desk";
-import { LATCH_SECONDS, clamp01, marketHorizon, parseClock, scheduleOrders } from "./clock";
-
-// The progress target before any fit has landed, per scenario. This only shapes the bar's
-// fill on the very first run — the seconds shown are always real elapsed, and from the
-// second bar on the target is measured. Crash fits are materially slower than calm ones
-// (the optimizer works harder on a stressed correlation), so one shared guess made the
-// crash bar sprint to the cap and sit there.
-const FIRST_ESTIMATE = { calm: 10, crash: 25 };
-const FIRST_ESTIMATE_FALLBACK = 10;
-
-// The fill NEVER reaches full while a fit is in flight. The target is an estimate, so an
-// overrunning run would otherwise show a full — and, in the panel, green — bar while the
-// model is still grinding, claiming a completion that has not happened. Capping short
-// keeps full-and-green as the exclusive signal of a genuinely landed fit.
-const PROGRESS_CAP = 0.97;
-
-// A single outlier run (a bad optimizer start) would poison the next bar's pacing, so the
-// target is the median of recent runs rather than the last one.
-const ESTIMATE_WINDOW = 3;
+import {
+  LATCH_SECONDS,
+  PROGRESS_CAP,
+  clamp01,
+  createProgressEstimator,
+  marketHorizon,
+  parseClock,
+  scheduleOrders,
+} from "./clock";
 
 // Fetches per bar, counting the first. A rejected fetch says nothing about the model — the
 // runner was still starting, or the connection dropped — so the bar is worth asking for
 // again; a runner that is genuinely down must not be hammered every frame. Two is the whole
 // budget: one retry, then the bar is dropped and the grid moves on.
 const MAX_ATTEMPTS = 2;
-
-function median(values) {
-  const sorted = values.slice().sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
 
 export function createLivePlayback(meta, fetchBar, onState) {
   const {
@@ -55,7 +41,7 @@ export function createLivePlayback(meta, fetchBar, onState) {
     cpu = null, scenario = null,
   } = meta;
 
-  const firstEstimate = FIRST_ESTIMATE[scenario] ?? FIRST_ESTIMATE_FALLBACK;
+  const estimator = createProgressEstimator(scenario);
   const openSeconds = parseClock(session?.open);
   const orderTape = scheduleOrders(orders, openSeconds);
 
@@ -90,7 +76,6 @@ export function createLivePlayback(meta, fetchBar, onState) {
   let inFlight = null; // the bar whose fit is being fetched; null = idle
   let fetchStartReal = null; // when the in-flight fetch started (drives the clock)
   let fetchToken = 0; // guards against a stale fetch resolving after teardown
-  let recentRoundTrips = []; // durations of the last few fetches
   let landedUntil = null; // when the completed-frame latch releases; null = not latched
   let landedSeconds = null; // the latched run's model time, which the latch displays
   let deadState = false; // the most recently RESOLVED bar was dead
@@ -213,8 +198,7 @@ export function createLivePlayback(meta, fetchBar, onState) {
       // cap before the fit landed. Predict round trips with round trips; keep reporting
       // model seconds.
       const roundTrip = Math.max(0, elapsed - fetchStartReal);
-      recentRoundTrips.push(roundTrip);
-      if (recentRoundTrips.length > ESTIMATE_WINDOW) recentRoundTrips.shift();
+      estimator.record(roundTrip);
       landedSeconds = event.compute_seconds ?? roundTrip;
       landedUntil = elapsed + LATCH_SECONDS;
       desk.pushHistory(bar.ordinal, bar.marketTs, "computed", event.compute_seconds);
@@ -225,12 +209,6 @@ export function createLivePlayback(meta, fetchBar, onState) {
     }
     inFlight = null;
     fetchStartReal = null;
-  }
-
-  // The median of recent round trips, which is what this bar is actually predicting. The
-  // displayed seconds are always real elapsed; only the FILL uses this.
-  function estimateTarget() {
-    return recentRoundTrips.length ? median(recentRoundTrips) : firstEstimate;
   }
 
   function computeState() {
@@ -249,7 +227,7 @@ export function createLivePlayback(meta, fetchBar, onState) {
     }
     if (inFlight != null) {
       const runElapsed = Math.max(0, elapsed - fetchStartReal);
-      const target = estimateTarget();
+      const target = estimator.target();
       return {
         running: true, idle: false, landed: false, done: false, dead: false,
         elapsed: runElapsed, target,
@@ -261,7 +239,7 @@ export function createLivePlayback(meta, fetchBar, onState) {
     const next = nextBar < bars.length ? bars[nextBar] : null;
     return {
       running: false, idle: true, landed: false, done: false, dead: deadState,
-      elapsed: 0, target: recentRoundTrips.length ? estimateTarget() : 0, progress: 0,
+      elapsed: 0, target: estimator.measured() ? estimator.target() : 0, progress: 0,
       waitSeconds: next ? Math.max(0, next.arriveReal - elapsed) : 0,
     };
   }

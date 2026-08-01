@@ -42,10 +42,11 @@ export default function AbstractSection() {
           The present work rebuilds that pipeline as a seeded and unit-tested Python core,
           verified against a golden-master reference. It then addresses several
           shortcomings the original left open. Expected returns entered the value-at-risk
-          calculation, where they do not belong. Coverage was tested for its unconditional
-          rate alone, without a companion test for the independence of exceedances. Most
-          importantly, the optimizer failed to converge on the 2020 crash, which is the
-          kind of event the tool was designed to monitor. Each change is reported as a
+          calculation, where a five-minute drift estimate is too noisy to carry. Coverage
+          was tested for its unconditional rate alone, without a companion test for the
+          independence of exceedances. Most importantly, the original produced no usable
+          estimate on the 2020 crash, which is the kind of event the tool was designed to
+          monitor. Each change is reported as a
           before-and-after comparison against the reproduced baseline. Differences smaller
           than the Monte Carlo simulation noise are not treated as findings.
         </p>

@@ -44,10 +44,14 @@ The configuration the live desk ships is in `dccmgarch/live/config.py` as `DESK_
 
 Two of these deserve a note. `reseasonalize_forecast` is off deliberately: it was
 measured, and it regressed coverage on four of five windows through a level bias that was
-never explained, so it stays available and unused. `guard_pit` is the substantive fix for
-stress windows: a saturated Student-t PIT maps to plus or minus infinity through
-`norm.ppf`, which poisons every correlation into a NaN VaR. That is a numerical failure
-rather than an optimizer failure, and clamping the PIT is what actually resolves it.
+never explained, so it stays available and unused. `guard_pit` is retained as a safeguard
+rather than a fix. It clamps a saturated Student-t PIT, which would otherwise map to plus
+or minus infinity through `norm.ppf` and poison every correlation into a NaN VaR. That
+saturation was itself a symptom of the mis-standardized transform corrected in the July
+2026 specification audit: with the standardization corrected, no cell saturates on the
+crash window and the baseline estimates all 389 bars with this flag off. The clamp costs
+nothing and stays available, but no result rests on it. The write-up under Results on the
+demo site reports the measurement.
 
 ## VarResult
 

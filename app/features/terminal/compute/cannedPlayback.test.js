@@ -159,6 +159,37 @@ describe("compute scheduling", () => {
     expect(latestState().compute).toMatchObject({ landed: true, progress: 1 });
     pb.stop();
   });
+
+  // The recording knows every duration up front; the bar must not. Reading the in-flight
+  // bar's own `compute_seconds` gave the canned desk a countdown no live desk can have,
+  // and made the panel's "over estimate" state unreachable in the deployed demo.
+  it("paces the fill off finished fits, never the one in flight", async () => {
+    const pb = createPlayback(
+      // Two fast fits set the estimate, then one that runs far longer than they did.
+      payload([order(10), reassess(100, 0.5), reassess(200, 0.5), reassess(300, 6.0)]),
+      onState
+    );
+    pb.start();
+
+    // Mid-way through the third fit: 2s into a 6s run, against a ~0.5s estimate. If the
+    // engine could see the recorded 6.0 the fill would read 1/3; blind, it is pinned.
+    await raf.advance(5.0);
+    const state = latestState();
+    expect(state.compute.running).toBe(true);
+    expect(state.compute.progress).toBeCloseTo(0.97, 5); // PROGRESS_CAP, never full
+    expect(state.compute.target).toBeCloseTo(0.5, 5); // the median of what LANDED
+    expect(state.compute.elapsed).toBeGreaterThan(1.5); // real seconds, unclamped
+    pb.stop();
+  });
+
+  it("shows no compute estimate before the first fit has landed", async () => {
+    const pb = createPlayback(payload([order(10), reassess(500, 0.5)]), onState);
+    pb.start();
+
+    await raf.advance(1.0); // idle, waiting for bar 0 to arrive at t=5
+    expect(latestState().compute).toMatchObject({ idle: true, target: 0 });
+    pb.stop();
+  });
 });
 
 describe("run completion", () => {
