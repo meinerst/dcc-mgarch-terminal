@@ -30,7 +30,7 @@ export default function CritiqueSection() {
         they are set out under Outlook.
       </p>
 
-      <h3>How the four were chosen</h3>
+      <h3>How they were chosen</h3>
       <p>
         The selection rule was fixed before any result was examined. A correction had to carry
         a stated theoretical justification, and that justification had to hold before its
@@ -64,7 +64,10 @@ export default function CritiqueSection() {
         infrastructure built for other reasons. The wall-clock duration of every estimation
         cycle was already recorded, which answers the original's unsupported performance claim
         directly. The correction for multiple testing is arithmetic on statistics that had
-        already been computed. Neither cost anything, so both are reported.
+        already been computed. Neither cost anything, so both are reported. The multiple-testing
+        correction is the fourth of the four errors, arrived at without being chosen; the
+        performance claim is not an error but an unsupported assertion, and it is answered here
+        with a measurement rather than corrected.
       </p>
       <p>
         Everything else was set aside on cost. A Student-t copula or an asymmetric GARCH
