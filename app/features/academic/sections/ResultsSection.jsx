@@ -520,7 +520,9 @@ export default function ResultsSection() {
         rejections do. Unconditional coverage on the crash window is rejected at both portfolio
         sizes and in both phases, at p = 2.7 × 10⁻⁴ for the baseline at either dimension, and the
         conditional-coverage rejection on the thirty-asset calm control survives at p = 2.9 ×
-        10⁻⁴. So does every coverage rejection produced by the seasonality ablation. The clustering
+        10⁻⁴. So do the coverage rejections produced by the seasonality ablation on the three
+        volatile windows, though not the two on its calm window, which reach 7.20 and 8.72 against
+        thresholds of 10.97 and 13.97. The clustering
         result does not. The independence failure in volatile2 corresponds to p = 0.0038 in the
         fixed phase and 0.0013 in the baseline, both comfortably significant at the conventional
         level and neither surviving a correction for a family this size.

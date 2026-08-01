@@ -164,7 +164,8 @@ export default function MethodologySection() {
         <div className="ac-fig-cap">
           <span className="ac-fig-num">Table 1.</span>
           The four configurations. Each column is a distinct switch setting, read from the driver
-          that produced the corresponding result. Baseline, not shown, has every switch off.
+          that produced the corresponding result. Baseline, not shown, differs in the first row
+          only: it retains the expected-returns term, and every other switch is off.
         </div>
         <div className="ac-table-wrap">
           <table className="ac-table">
@@ -196,7 +197,8 @@ export default function MethodologySection() {
               </tr>
               <tr>
                 <td><code>fallback_ccc_on_fail</code></td>
-                <td className="muted">off</td><td>on</td><td className="muted">off</td><td>on</td>
+                <td className="muted">off</td><td className="muted">off</td>
+                <td className="muted">off</td><td>on</td>
               </tr>
               <tr>
                 <td><code>reseasonalize_forecast</code></td>
@@ -209,16 +211,17 @@ export default function MethodologySection() {
           <span className="ac-table-note-label">Note.</span> The columns differ for reasons that
           are themselves results. On the four non-crash windows only the expected-returns switch is
           thrown, so the measured difference against the baseline is attributable to that change
-          alone. The three-asset crash column predates the bounded transform and carries the
-          constant-correlation fallback instead. The thirty-asset column was designed as the one
-          the convergence claim would rest on, and it runs with the fallback switched off so that a
-          converged bar is a genuinely converged bar and not a labelled substitute. That design
-          outlived the claim: under the corrected specification the baseline converges on every bar
-          too, so the column now documents a configuration rather than carrying a result. The
-          terminal keeps the fallback on,
-          since a live desk that produces no number at all is worse than one that produces a number
-          marked as degraded. The seasonality switch is off everywhere; it was measured on its own
-          phase and not adopted.
+          alone. The three-asset crash column predates the bounded transform and runs without it,
+          which is why it differs from the thirty-asset column in that row alone. Both crash
+          columns run with the constant-correlation fallback switched off, so that a converged bar
+          is a genuinely converged bar and not a labelled substitute; a guarded configuration
+          carrying the fallback exists in the driver and was never needed, since the reparameterized
+          optimizer converged on every bar of both runs. That design outlived the claim it was built
+          for: under the corrected specification the baseline converges on every bar too, so the
+          thirty-asset column now documents a configuration rather than carrying a result. The
+          terminal is the one configuration that keeps the fallback on, since a live desk that
+          produces no number at all is worse than one that produces a number marked as degraded. The
+          seasonality switch is off everywhere; it was measured on its own phase and not adopted.
         </p>
       </div>
       <p>

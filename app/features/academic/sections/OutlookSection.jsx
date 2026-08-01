@@ -134,10 +134,12 @@ export default function OutlookSection() {
 
       <h3>Cross-language kernels (Rust or C++)</h3>
       <p>
-        The terminal exposes the reassessment latency of the Python implementation honestly,
-        and the measured timing shows that this latency lengthens under stress, from about nine
-        seconds on the Dow-30 calm window to about fourteen on the crash window, which is the
-        worst moment for a stale forecast. Porting the estimation kernel to Rust or C++
+        The terminal exposes the reassessment latency of the Python implementation honestly, and
+        that latency is the motivation here: a corrected cycle on the Dow-30 runs to roughly eleven
+        seconds on the calm window and longer still on the crash window, against a market that does
+        not wait. Whether stress systematically lengthens the cycle is not settled by the present
+        measurement, for the reason given under Computation time, so the case rests on the level
+        rather than on a difference between regimes. Porting the estimation kernel to Rust or C++
         would be the direct way to shorten that interval. The point of doing so in a compiled
         language rather than by relaxing the model is that the live path is held to the same
         Python baseline the backtest reports, so the honest cost is reduced rather than
