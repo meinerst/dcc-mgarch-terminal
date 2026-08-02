@@ -72,7 +72,10 @@ export default function CritiqueSection() {
       <p>
         Everything else was set aside on cost. A Student-t copula or an asymmetric GARCH
         specification means a different model. A longer estimation window means more data and a
-        re-derivation of every scenario index.
+        re-derivation of every scenario index. The first two were subsequently set aside for a
+        second and stronger reason, given under Outlook: the fitted marginals carry no excess
+        kurtosis, so a richer tail specification would be modelling a tail the estimation does
+        not find.
       </p>
 
       <div className="divider" />

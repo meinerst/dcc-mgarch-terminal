@@ -21,21 +21,45 @@ regenerated afterwards, and the correction cost the project its headline finding
 wrong, and what it changed, is written up under Results on the demo site; the corrected
 transforms are specified in `docs/MODEL.md`. The commit history above is the audit trail.
 
-## An invitation
+## Scope: a daily model on intraday data
 
-This model is not finished, and I would rather see it improved than admired. Several limits
-are known and unsolved. The estimation window is short. The fitted Student-t degrees of
-freedom sit implausibly high, at a median of 268 to 339 across the evaluation windows
-against a fitter bound of 500, which means the marginals carry no meaningful excess
-kurtosis and a Student-t at those values is a normal distribution wearing a fat-tailed
-label. And the model is badly over-conservative: it breaches roughly six to nine times per
-window where 19.45 are expected, concentrated at the opening half hour. None of that is
-hidden. It is all written up on the demo site, including the arithmetic for the
-multiple-testing correction, under which most of the study's own rejections do not survive.
+DCC is specified and validated on daily returns. Engle (2002) estimates conditional
+correlation from one observation per day, over a long history, with slow mean-reverting
+dynamics. This project applies that model to 5-minute bars, which is a different process
+with a shape daily data does not have. The Taylor and Xu deseasonalization is a patch on
+that mismatch rather than a native part of the model: it exists because intraday volatility
+is U-shaped across the session and the model has no term for it.
 
-If you can do better, please do. Clone it, break it, open an issue or a pull request. The
-golden master and the Kupiec and Christoffersen implementation ship with the code precisely
-so that a proposed change can be argued with numbers rather than opinions.
+The patch does not carry the model. The forecast is flat across the trading day while the
+realised tail is not, and the exceedances follow: across the five evaluation windows, 28 of
+65 fall in the opening half hour, which expects 7.5. The obvious repair was built and
+measured. Re-seasonalizing the forecast per slot confirmed the mechanism decisively, moving
+one window's clustering statistic from 8.37 to 0.0002, and regressed coverage on every
+window at the same time, to 32, 38, 52 and 51 exceedances against 19.45 expected. The cause
+of that level bias is unresolved and the variant is not shipped. The mismatch is therefore
+not a defect that can be corrected out of this specification.
+
+The scope conclusion is that this model on this data does not produce usable value-at-risk.
+It is over-conservative in aggregate, breaching roughly six to nine times per window where
+19.45 are expected, and wrong in the opposite direction exactly where intraday risk
+concentrates. The fitted marginals compound it: the Student-t degrees of freedom sit
+implausibly high, at a median of 268 to 339 across the evaluation windows against a fitter
+bound of 500, which means the marginals carry no meaningful excess kurtosis and a Student-t
+at those values is a normal distribution wearing a fat-tailed label. The specification names
+a fat-tailed innovation and the estimation does not find one. None of that is hidden. It is
+written up on the demo site, including the arithmetic for the multiple-testing correction,
+under which most of the study's own rejections do not survive. There are also known reasons
+a daily correlation model resists high-frequency data, notably microstructure noise in
+observed prices and the Epps effect on correlations measured over a fixed grid, and neither
+is measured here.
+
+The field addresses this by changing what is modelled. With intraday data the covariance can
+be measured from the ticks rather than inferred from squared returns, using realised
+covariance and its noise-robust and asynchronicity-robust forms such as realised kernels and
+the Hayashi-Yoshida estimator, and the resulting series is then modelled directly, by HAR or
+by realised-data variants of DCC such as DCC-HEAVY. That is a different model class, not a
+tuning of this one, which is why this repository is not a starting point for a better
+intraday risk model. It is the record of establishing that it could not become one.
 
 ## Quick start
 
@@ -84,7 +108,7 @@ transform corrected, the window estimates on all 389 bars with halt-masking, the
 optimizer and the PIT clamp all **off**, and switching them on reproduces the same hit
 sequence exactly. The repairs are retained because they are cheap and correct, and no
 result rests on them. What the crash window now shows is not a convergence failure but the
-over-conservative forecast described under "An invitation" above.
+over-conservative forecast described under "Scope" above.
 
 ## Two clocks, and only one is compressed
 

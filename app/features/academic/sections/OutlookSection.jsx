@@ -1,21 +1,24 @@
-// Outlook - the honest "what a next pass would do" that closes the Results writeup.
+// Outlook - the scope verdict that closes the Results writeup, and what follows from it.
 //
-// Only UNBUILT work belongs here: guard_pit, the 3.3 convergence result and the EXP-02
-// seasonality identification are done and live in Results. Sources are Planning.md's
-// "Outlook" section (the three locked directions and the staleness rule) and
-// research/findings_log.md EXP-05.
+// This section used to be a roadmap: six directions framed as "what a next pass would do".
+// That framing is retired. The study's conclusion is that the specification is misfit for
+// 5-minute data (a daily-returns model applied intraday, with Taylor-Xu as a patch on the
+// mismatch), so items that refine THIS specification are no longer a next pass - they are a
+// description of what a different model class would have to supply. The lead states the
+// verdict once and the items are scoped by it.
 //
-// Each direction names the shortcoming it addresses and a reason it is motivated, rather
-// than a knob turned to chase a backtest score - the overfitting guardrail. That stance is
-// stated once in the lead and not repeated per item; the window-length item keeps "a
-// uniform improvement would disconfirm the stated mechanism", which is a falsification
-// criterion rather than a restatement.
+// Two former items were CUT rather than reframed, because the study's own evidence
+// contradicts them: the Student-t copula and the asymmetric-marginals item both propose
+// richer tails, while the fitted marginal nu of 268-339 says the estimation finds no fat
+// tail to model. Proposing them as remedies would argue against Results. The nu finding
+// itself is kept - it is the evidence, not the remedy.
 //
-// "An estimator that carries a large book" exists because Results reports the 390-bar
-// identification wall: without it the writeup would raise a hard limit and never answer
-// it. The Rust item is correspondingly NARROW - it shortens the cycle where the model
-// still estimates and does nothing about that wall, and part of the current cost is
-// sequential marginal fits rather than a language choice at all.
+// The estimator-size limit and the latency bound are retained unchanged in substance: both
+// are properties of the specification and are true regardless of the verdict.
+//
+// The window-length item's "deliberately left unmeasured" was STALE - the per-slot question
+// was measured (findings_log EXP-02, re-ground under EXP-06): mechanism confirmed, coverage
+// regressed, cause unresolved. It now reports that outcome instead of registering it as open.
 //
 // This is the last section on the academic page, so it also carries the closing CTA into
 // the terminal. Keeping it here means the explicit path and ScrollToTerminal's
@@ -26,38 +29,36 @@ export default function OutlookSection() {
     <section id="outlook" className="ac-section">
       <h2 className="ac-section-title">Outlook</h2>
       <p className="lead">
-        Several of the eleven shortcomings were set aside because they need a different model or
-        more data. They are described here, since that is what they are: the next study rather
-        than a correction to this one. Each is chosen because a mechanism can be stated for it in
-        advance, and not because it is a parameter that would be turned until a backtest score
-        improved.
+        The conclusion this study reaches is about fit rather than about tuning. DCC is specified
+        and validated on daily returns, and applying it to five-minute bars asks it to carry a
+        diurnal shape it has no term for. The Taylor and Xu filter is a patch on that mismatch,
+        and the results say the patch does not carry the model: the forecast is flat across the
+        session while the realised tail concentrates at the open, and the per-slot correction that
+        addresses the mismatch directly confirmed its mechanism while regressing coverage on every
+        window. What follows is therefore not a list of improvements to this specification. It is
+        what a different model class would have to supply, and what remains true about this one
+        regardless.
       </p>
 
       <div className="divider" />
 
-      <h3>Asymmetric marginals (leverage GARCH)</h3>
+      <h3>Measuring the covariance rather than inferring it</h3>
       <p>
-        The specification fits a symmetric GARCH(1,1) to each series, which responds identically to a
-        downward and an upward move of equal magnitude. Equity returns do not behave that way,
-        since volatility tends to rise more after a loss than after a gain of the same size,
-        the effect commonly termed leverage. Replacing the univariate marginals with a
-        GJR-GARCH or an EGARCH specification would let the conditional variance carry that
-        asymmetry. The motivation is that the asymmetry is largest in exactly the falling,
-        high-volatility regime the tool exists to monitor, so the omission is expected to matter
-        most on the crash window rather than on the calm control.
+        The specification infers variance from squared returns, which is the daily-data method.
+        Intraday data admits a different one: with observations arriving through the session the
+        covariance can be measured directly from the ticks rather than filtered out of a return
+        series, and the estimators built for that purpose are robust to the two properties of
+        high-frequency prices this model has no defence against, namely the noise in an observed
+        price and the fact that two instruments do not trade at the same instants. Realised
+        covariance and its noise-robust and asynchronicity-robust forms, such as realised kernels
+        and the Hayashi-Yoshida estimator, are the measurement step; the measured series is then
+        modelled in its own right, by a heterogeneous autoregressive specification or by
+        realised-data variants of DCC. Neither the noise nor the asynchronicity is measured in
+        this project, and that is a limit of what is claimed here rather than a result.
       </p>
-
-      <div className="divider" />
-
-      <h3>Tail-dependent dependence (Student-t copula)</h3>
       <p>
-        The joint law is currently a Gaussian copula, whose coefficient of tail dependence is
-        exactly zero, so that extreme co-movements are asymptotically independent under it. For
-        an instrument whose purpose is to measure joint tail risk across a portfolio, that is
-        the least defensible of the modelling assumptions, since it rules out by construction
-        the simultaneous breakdowns that a contagion tool is built to see. Replacing it with a
-        Student-t copula, or another copula admitting positive tail dependence, would allow
-        joint extremes to co-occur at the rate observed in real dislocations.
+        This is a change of model class rather than a parameter of the present one, which is the
+        reason it closes the study instead of extending it.
       </p>
 
       <div className="divider" />
@@ -74,13 +75,13 @@ export default function OutlookSection() {
       </p>
       <p>
         The seasonality correction also raises the requirement on window length in a way that did
-        not previously apply. Once per-slot factors are load-bearing, a five-day window supplies only five
-        observations per intraday slot. The prediction, recorded before any measurement, is that
-        input length matters on the corrected model where it did not before, and that the gain
-        concentrates in the open and close slots rather than spreading uniformly across the
-        session. A uniform improvement would disconfirm the stated mechanism even if the scores
-        rose. The question is registered and deliberately left unmeasured here, since a sweep
-        carries the highest data-snooping risk of any experiment in this project.
+        not previously apply. Once per-slot factors are load-bearing, a five-day window supplies
+        only five observations per intraday slot. That correction was measured rather than left
+        open, and the outcome is reported under Results: it identified the mechanism decisively,
+        moving the clustering statistic on volatile2 from 8.37 to 0.0002, and it regressed
+        coverage uniformly across all four windows at the same time. The cause of that level bias
+        is not established, and a window long enough to identify per-slot factors is the leading
+        unproven explanation rather than a demonstrated one.
       </p>
 
       <div className="divider" />
@@ -106,66 +107,53 @@ export default function OutlookSection() {
         estimation does not find one.
       </p>
       <p>
-        This is the most consequential open question the study leaves, because it undercuts a
-        premise rather than a result. Whether it reflects five-minute returns that are genuinely
-        close to conditionally normal once volatility is filtered, an estimation window too short
-        to identify a tail index, or an interaction with the seasonal filter, is not established
-        here and would need its own experiment. It also compounds with the copula question above:
-        a model with neither tail-dependent joint behaviour nor fat marginal tails has very
-        little machinery left for representing a simultaneous extreme.
+        This bears on the scope conclusion rather than sitting beside it. The obvious remedies for
+        a model that cannot represent a simultaneous extreme are richer tails, a Student-t copula
+        in place of the Gaussian one or an asymmetric marginal specification, and this result
+        argues against reaching for them here: the estimation is not finding a fat tail that a
+        richer parameterization would then carry. Whether that reflects five-minute returns that
+        are genuinely close to conditionally normal once volatility is filtered, an estimation
+        window too short to identify a tail index, or an interaction with the seasonal filter, is
+        not established here and belongs to a specification that measures its covariance rather
+        than inferring it.
       </p>
 
       <div className="divider" />
 
-      <h3>An estimator that carries a large book</h3>
+      <h3>Two limits that hold regardless of the verdict</h3>
       <p>
         The specification estimates a full unrestricted correlation matrix from a window of 390
         bars, which yields 389 returns, which places an upper bound on the number of instruments
         it can carry that has nothing to do with how fast the code runs. Past a few hundred
         instruments the estimate is ill-conditioned, and at 389 instruments or more it is
-        singular, as set out under Scaling in portfolio size.
-        A book of a few thousand instruments therefore needs an estimator that asks for less: a
-        small number of common drivers from which the matrix is rebuilt, or an estimate pulled
-        toward a simple target so that it stays invertible. Either is a change of model rather
-        than of implementation.
-      </p>
-
-      <div className="divider" />
-
-      <h3>Cross-language kernels (Rust or C++)</h3>
-      <p>
-        The terminal exposes the reassessment latency of the Python implementation honestly, and
-        that latency is the motivation here: a corrected cycle on the Dow-30 runs to roughly eleven
-        seconds on the calm window and longer still on the crash window, against a market that does
-        not wait. Whether stress systematically lengthens the cycle is not settled by the present
-        measurement, for the reason given under Computation time, so the case rests on the level
-        rather than on a difference between regimes. Porting the estimation kernel to Rust or C++
-        would be the direct way to shorten that interval. The point of doing so in a compiled
-        language rather than by relaxing the model is that the live path is held to the same
-        Python baseline the backtest reports, so the honest cost is reduced rather than
-        concealed.
+        singular, as set out under Scaling in portfolio size. A book of a few thousand instruments
+        therefore needs an estimator that asks for less: a small number of common drivers from
+        which the matrix is rebuilt, or an estimate pulled toward a simple target so that it stays
+        invertible. That is a property of the estimator rather than of the implementation, and it
+        would apply equally to a specification built on measured covariances.
       </p>
       <p>
-        The gain from that is bounded, and the bound is worth stating. A compiled kernel shortens the
-        cycle at the portfolio sizes where the model still estimates. It does nothing about the
-        size limit of the item above, which belongs to the specification rather than to the
-        language. Part of the present cost is not a language question either, since the marginal
-        fits run one after another although they are independent. The instrument-count sweep is
-        the first step for that reason: it locates the size at which latency stops being the
-        binding problem, and separates the part of the cost that a faster kernel can reach from
-        the part that only a different estimator can.
+        Latency is the second. The terminal exposes the reassessment cost of the Python
+        implementation honestly: a corrected cycle on the Dow-30 runs to roughly eleven seconds on
+        the calm window and longer still on the crash window, against a market that does not wait.
+        Whether stress systematically lengthens the cycle is not settled by the present
+        measurement, for the reason given under Computation time, so the observation rests on the
+        level rather than on a difference between regimes. A compiled kernel would shorten that
+        interval at the sizes where the model still estimates, and part of the present cost is not
+        a language question at all, since the marginal fits run one after another although they
+        are independent. Neither reaches the size limit above, and neither reaches the fit
+        problem, which is why a faster implementation of this specification was not pursued.
       </p>
 
       <div className="divider" />
 
       <p>
         Two remaining items are recorded and go no further. An extreme-value treatment of the
-        univariate tails is the marginal counterpart to the copula item above. However, it requires
-        more data than the parametric tail it would replace, which couples it to the
-        window-length question and makes it a poor fit for a first pass. The volume-weighted
-        approach to de-seasonalization, which the original attempted and abandoned in an appendix,
-        is not revisited at all; the original implementation has been recovered for reference and
-        nothing about it has changed.
+        univariate tails would face the same objection as the copula and asymmetry remedies above,
+        since it presumes a tail the estimation does not find, and it requires more data than the
+        parametric tail it would replace. The volume-weighted approach to de-seasonalization,
+        which the original attempted and abandoned in an appendix, is not revisited at all; the
+        original implementation has been recovered for reference and nothing about it has changed.
       </p>
 
       {/* Closing CTA: the explicit path from the end of the thesis into the live desk.
