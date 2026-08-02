@@ -53,12 +53,12 @@ a daily correlation model resists high-frequency data, notably microstructure no
 observed prices and the Epps effect on correlations measured over a fixed grid, and neither
 is measured here.
 
-The field addresses this by changing what is modelled. With intraday data the covariance can
-be measured from the ticks rather than inferred from squared returns, using realised
-covariance and its noise-robust and asynchronicity-robust forms such as realised kernels and
-the Hayashi-Yoshida estimator, and the resulting series is then modelled directly, by HAR or
-by realised-data variants of DCC such as DCC-HEAVY. That is a different model class, not a
-tuning of this one, which is why this repository is not a starting point for a better
+The field addresses this by changing what is modelled. With intraday data, the covariance
+can be measured from the ticks rather than inferred from squared returns, using realised
+covariance and its noise-robust and asynchronicity-robust forms, such as realised kernels
+and the Hayashi-Yoshida estimator, and the resulting series is then modelled directly, by
+HAR or by realised-data variants of DCC, such as DCC-HEAVY. That is a different model class,
+not a tuning of this one, which is why this repository is not a starting point for a better
 intraday risk model. It is the record of establishing that it could not become one.
 
 ## Quick start

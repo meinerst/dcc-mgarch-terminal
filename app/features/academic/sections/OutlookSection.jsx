@@ -45,7 +45,7 @@ export default function OutlookSection() {
       <h3>Measuring the covariance rather than inferring it</h3>
       <p>
         The specification infers variance from squared returns, which is the daily-data method.
-        Intraday data admits a different one: with observations arriving through the session the
+        Intraday data admits a different one: with observations arriving through the session, the
         covariance can be measured directly from the ticks rather than filtered out of a return
         series, and the estimators built for that purpose are robust to the two properties of
         high-frequency prices this model has no defence against, namely the noise in an observed
@@ -125,7 +125,7 @@ export default function OutlookSection() {
         The specification estimates a full unrestricted correlation matrix from a window of 390
         bars, which yields 389 returns, which places an upper bound on the number of instruments
         it can carry that has nothing to do with how fast the code runs. Past a few hundred
-        instruments the estimate is ill-conditioned, and at 389 instruments or more it is
+        instruments, the estimate is ill-conditioned, and at 389 instruments or more it is
         singular, as set out under Scaling in portfolio size. A book of a few thousand instruments
         therefore needs an estimator that asks for less: a small number of common drivers from
         which the matrix is rebuilt, or an estimate pulled toward a simple target so that it stays
