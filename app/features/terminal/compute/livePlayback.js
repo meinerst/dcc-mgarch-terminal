@@ -20,9 +20,8 @@
 import { createDesk } from "../book/desk";
 import {
   LATCH_SECONDS,
-  PROGRESS_CAP,
-  clamp01,
   createProgressEstimator,
+  fillFraction,
   marketHorizon,
   parseClock,
   scheduleOrders,
@@ -231,8 +230,8 @@ export function createLivePlayback(meta, fetchBar, onState) {
       return {
         running: true, idle: false, landed: false, done: false, dead: false,
         elapsed: runElapsed, target,
-        // Capped: an overrunning run keeps creeping but never claims completion.
-        progress: target > 0 ? Math.min(clamp01(runElapsed / target), PROGRESS_CAP) : PROGRESS_CAP,
+        // An overrunning run keeps creeping but never claims completion (clock.js).
+        progress: fillFraction(runElapsed, target),
         waitSeconds: 0,
       };
     }

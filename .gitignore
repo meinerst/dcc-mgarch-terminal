@@ -36,6 +36,12 @@ research/_smoke/
 # file that reverses the public data/. Kept on disk for reproducibility, never committed.
 private/publish/ticker_map.json
 
+# Coverage artifacts (CI reports to the log; nothing here is committed)
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
 # Claude local settings
 .claude/settings.local.json
 

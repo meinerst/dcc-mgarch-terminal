@@ -120,6 +120,11 @@ is close to Gaussian.
 If a golden fails by a lot, or a non-DCC quantity fails at all, that is a real
 regression.
 
+`docs/TESTING.md` carries the measurements behind this table — the cross-machine stack
+comparison, why capping package majors did not restore bit-exactness, and how the one
+percent lock was placed between the observed noise floor and the smallest real regression
+seen.
+
 ## Backtesting
 
 `backtest/stats.py` implements Kupiec's proportion-of-failures test and Christoffersen's

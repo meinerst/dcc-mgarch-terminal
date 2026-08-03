@@ -25,8 +25,6 @@ export function parseClock(hhmm) {
   return Number(match[1]) * 3600 + Number(match[2]) * 60;
 }
 
-export const clamp01 = (x) => Math.max(0, Math.min(1, x));
-
 /**
  * The market timestamp the clock stops at: the last bar plus the tape's tail.
  *
@@ -79,6 +77,26 @@ const ESTIMATE_WINDOW = 3;
 // model is still grinding, claiming a completion that has not happened. Capping short
 // keeps full-and-green as the exclusive signal of a genuinely landed fit.
 export const PROGRESS_CAP = 0.97;
+
+// Where the estimate lands the fill. The cap used to be a hard clamp, and the fill hit it
+// the moment a run passed its estimate and then FROZE there — on the crash payload, nine
+// motionless seconds of a twenty-five-second fit, which reads as a hung desk rather than a
+// slow one. The knee leaves room to keep moving: the estimate is worth 90% of the track,
+// and the overrun spends the last 7% approaching the cap without ever arriving.
+const SOFT_KNEE = 0.9;
+
+/**
+ * How full the fill sits, from the run's real elapsed and the estimate paced off past fits.
+ *
+ * Strictly increasing and strictly below `PROGRESS_CAP` — so the bar is always visibly
+ * alive while the model grinds, and full is still something only a landed fit can show.
+ */
+export function fillFraction(runElapsed, target) {
+  if (!(target > 0)) return PROGRESS_CAP; // nothing to pace against: sit at the cap
+  const ratio = Math.max(0, runElapsed) / target;
+  if (ratio <= 1) return ratio * SOFT_KNEE;
+  return PROGRESS_CAP - (PROGRESS_CAP - SOFT_KNEE) * Math.exp(1 - ratio);
+}
 
 function median(values) {
   const sorted = values.slice().sort((a, b) => a - b);

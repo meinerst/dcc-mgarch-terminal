@@ -19,19 +19,20 @@ const COLUMNS = [
     cellClass: (row) => (row.shares >= 0 ? "positive" : "negative"),
   },
   {
-    key: "marketPrice", label: "MARKET",
+    key: "marketPrice", label: "MKT PX",
     accessor: (row) => row.marketPrice,
     render: (row) => (row.marketPrice == null ? "—" : money(row.marketPrice, 2)),
+    tip: "Market price: the last bar's mid for this name, the level the position is marked at.",
   },
   {
     // Coloured by the sign of the unrealized P&L: green when the position is in profit,
     // whichever side it is on.
-    key: "inventoryPrice", label: "INVENTORY",
+    key: "inventoryPrice", label: "INV PX",
     accessor: (row) => row.inventoryPrice,
     render: (row) => (row.inventoryPrice == null ? "—" : money(row.inventoryPrice, 2)),
     cellClass: (row) =>
       row.inventoryPrice == null ? "" : row.unrealized >= 0 ? "positive" : "negative",
-    tip: "Average entry price of the open position (average-cost, not FIFO). Compare against MARKET to read inventory P&L.",
+    tip: "Inventory price: average entry price of the open position (average-cost, not FIFO). Compare against MKT PX to read inventory P&L.",
   },
   {
     key: "exposure", label: "EXPOSURE",

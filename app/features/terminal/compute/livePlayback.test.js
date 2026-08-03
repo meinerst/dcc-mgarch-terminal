@@ -283,6 +283,23 @@ describe("compute clock", () => {
     pb.stop();
   });
 
+  // The twin of the canned engine's overrun test: a slow server must leave the desk
+  // visibly alive, not frozen at the cap for the rest of the fit.
+  it("keeps the fill moving while a fit overruns its estimate", async () => {
+    const f = deferredFetcher();
+    const meta = sessionMeta({ bars: [{ ordinal: 0, market_ts: 0 }, { ordinal: 1, market_ts: 10000 }] });
+    const pb = createLivePlayback(meta, f.fetchBar, onState);
+    pb.start();
+
+    await raf.advance(20); // past the 10s first-run estimate, fetch still out
+    const early = latestState().compute;
+    await raf.advance(10);
+    const later = latestState().compute;
+
+    expect(later.progress).toBeGreaterThan(early.progress);
+    expect(later.progress).toBeLessThan(0.97);
+    pb.stop();
+  });
 });
 
 // A rejected fetch and a non-finite fit used to arrive as the same event, so a runner that

@@ -176,9 +176,31 @@ describe("compute scheduling", () => {
     await raf.advance(5.0);
     const state = latestState();
     expect(state.compute.running).toBe(true);
-    expect(state.compute.progress).toBeCloseTo(0.97, 5); // PROGRESS_CAP, never full
+    expect(state.compute.progress).toBeGreaterThan(0.9); // past the knee, deep in overrun
+    expect(state.compute.progress).toBeLessThan(0.97); // PROGRESS_CAP, never reached
     expect(state.compute.target).toBeCloseTo(0.5, 5); // the median of what LANDED
     expect(state.compute.elapsed).toBeGreaterThan(1.5); // real seconds, unclamped
+    pb.stop();
+  });
+
+  // A hard clamp at the cap froze the fill for as long as a fit overran its estimate —
+  // nine motionless seconds on the crash payload, which reads as a hung desk. The bar has
+  // to keep moving on a run that is late, without ever claiming the run is over.
+  it("keeps the fill moving while a fit overruns its estimate", async () => {
+    const pb = createPlayback(
+      payload([order(10), reassess(100, 0.5), reassess(200, 0.5), reassess(300, 8.0)]),
+      onState
+    );
+    pb.start();
+
+    await raf.advance(4.0); // into the third fit, already past a 0.5s estimate
+    const early = latestState().compute;
+    await raf.advance(2.0);
+    const later = latestState().compute;
+
+    expect(early.running && later.running).toBe(true);
+    expect(later.progress).toBeGreaterThan(early.progress); // still climbing
+    expect(later.progress).toBeLessThan(0.97);
     pb.stop();
   });
 

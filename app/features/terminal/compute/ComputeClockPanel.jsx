@@ -1,6 +1,5 @@
 "use client";
 // The compute clock: real wall-clock seconds per model fit, never accelerated.
-import { useRef } from "react";
 import { Panel } from "../ui/Panel";
 import { secs } from "../ui/format";
 import { FitDiagnostics } from "./FitDiagnostics";
@@ -29,14 +28,6 @@ function remainingLine(compute) {
 export function ComputeClockPanel({
   compute, history, dccSeries = [], latest, riskLive, cpu, minNamesForRisk,
 }) {
-  // The fill animates its width as it grows. At a run boundary the progress drops from
-  // nearly full back to zero, and without intervention the CSS transition would animate
-  // that drop — the bar would visibly wind backwards. Detect the drop and kill the
-  // transition for that one frame so it snaps to zero, then resumes growing forward.
-  const previousProgress = useRef(0);
-  const resetting = compute.progress < previousProgress.current;
-  previousProgress.current = compute.progress;
-
   return (
     <Panel
       title="Risk Reassessment"
@@ -50,7 +41,9 @@ export function ComputeClockPanel({
             // Full-and-green is keyed to a LANDED fit, never to the fill reaching the end
             // of its estimate: an overrunning run stays blue and short of full.
             className={`compute-bar-fill ${compute.landed || compute.done ? "done" : ""}`}
-            style={{ width: `${compute.progress * 100}%`, transition: resetting ? "none" : undefined }}
+            // Redrawn every frame off the engine's own clock, so the width IS the
+            // animation — see the no-transition note in terminal.css.
+            style={{ width: `${compute.progress * 100}%` }}
           />
         </div>
         <div className="compute-clock-caption">

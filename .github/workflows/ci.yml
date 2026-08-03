@@ -1,0 +1,115 @@
+# Continuous integration — the model core and the frontend.
+#
+# The Python job installs from the version RANGES in pyproject.toml, never from a
+# lockfile. That is deliberate and it is the point of the job: the golden-master
+# tolerances (docs/TESTING.md) were chosen so a clean clone on a DIFFERENT machine,
+# with a different BLAS build, stays green. A Linux runner is the strongest routine
+# test of that claim available, so every push re-proves it.
+#
+# A failure here is therefore informative in two directions: either the code
+# regressed, or the tolerance design does not hold as widely as it claims.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: model core (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor declared in pyproject.toml, and a current release.
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install from the declared ranges
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Record the resolved stack
+        # Printed rather than pinned: when a golden fails, the first question is
+        # which versions it resolved to, and the answer should be in the log.
+        run: pip list
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        # The default suite. `slow` is deselected by pyproject config and run below.
+        run: pytest -q
+
+      - name: Slow tests (one real fit each)
+        run: pytest -m slow -q
+
+      - name: Coverage
+        # Reported, not gated. Scoped to the surface this repository ships: the
+        # model core plus the two backtest modules. A threshold is deliberately
+        # absent — a number that fails the build invites writing tests that move
+        # the number, and the golden-master design here is the opposite of that.
+        if: matrix.python-version == '3.12'
+        run: |
+          pip install pytest-cov
+          pytest -q --cov=src/dccmgarch \
+                    --cov=backtest/stats.py \
+                    --cov=backtest/portfolio.py \
+                    --cov-report=term-missing
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22, not 20: @testing-library/jest-dom 7 declares `node: >=22` and npm
+          # fails the engine check on 20. The README's "Node 18 or newer" covers
+          # running the desk, which does not install the test toolchain.
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        # `npm install`, not `npm ci`, and the reason is a real cross-platform gap
+        # rather than laziness. `package-lock.json` is generated on Windows, where
+        # npm skips `@rolldown/binding-wasm32-wasi` (optional, cpu wasm32) and so
+        # never records its transitive `@emnapi/*` deps. On Linux npm evaluates that
+        # branch, finds those entries missing and `npm ci` refuses the tree. The
+        # lockfile cannot be fixed from Windows — regenerating it there is a no-op,
+        # and forcing optional deps in pulls conflicting per-platform esbuild
+        # binaries. `npm install` resolves the gap on the runner instead.
+        #
+        # The cost is that the frontend job is not byte-pinned. That is acceptable
+        # here: the reproducibility claim this project makes is about the MODEL, and
+        # that job installs from ranges too, on purpose.
+        run: npm install
+
+      - name: Tests
+        run: npx vitest run
+
+      - name: Static export builds
+        # `output: "export"` — this is the artifact that actually ships.
+        run: npm run build

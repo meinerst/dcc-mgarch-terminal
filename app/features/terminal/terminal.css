@@ -365,7 +365,14 @@
 /* Idle between 5-min bars: the run finished and the clock waits. Faint dashed
    border marks the empty track as "waiting", not "0% of a run in progress". */
 .compute-bar-track.idle { border-style: dashed; border-color: #cbd5e1; background: #f8fafc; }
-.compute-bar-fill { height: 100%; background: var(--color-terminal-blue); width: 0; transition: width 0.1s linear; }
+/* NO width transition, deliberately. The engines re-emit progress every animation frame,
+   so the fill is already redrawn at 60fps and a transition smooths nothing. What it did do
+   was ANIMATE THE RESET: at a run boundary the width drops from full back to zero, and the
+   bar visibly travelled right-to-left before starting the next run. Guarding that in React
+   needs the drop detected during render, which a StrictMode double render defeats — the
+   second pass compares the new value against itself and sees no drop. Without the
+   transition the reset is a snap by construction and there is nothing to guard. */
+.compute-bar-fill { height: 100%; background: var(--color-terminal-blue); width: 0; }
 .compute-bar-fill.done { background: var(--color-terminal-positive); }
 .compute-clock-caption { display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px; color: var(--color-terminal-secondary); }
 .compute-clock-seconds { font-size: 24px; font-weight: 600; }

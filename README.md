@@ -132,6 +132,7 @@ realistic.
 | `tests/` | golden master plus the model's proof obligations |
 | `data/` | 5-minute price bars. Read `data/README.md` before using them |
 | `docs/MODEL.md` | the interfaces you are most likely to touch |
+| `docs/TESTING.md` | what is pinned, what is guarded, and how the tolerances were measured |
 
 Dependencies run one way. Everything imports the core, and the core imports nothing back.
 A baseline run and a fixed run differ by a `FixConfig`, never by a code path, which is
@@ -140,15 +141,31 @@ what makes a before-and-after comparison mean anything.
 ## Tests
 
 ```
-pytest -q                 # 62 tests, including the golden master
+pytest -q                 # 87 tests, including the golden master
 pytest -m slow            # 2 more that each run a real fit
-cd app && npx vitest run  # 176 frontend tests
+cd app && npx vitest run  # 180 frontend tests
 ```
+
+CI runs all of it on every push, on Linux, installing from the version ranges in
+`pyproject.toml` rather than from a lockfile — which makes each run a live test of the
+cross-machine tolerance claim below.
 
 The golden masters pin the model's observable outputs under a fixed seed. They are
 tolerant enough to absorb cross-machine BLAS and optimizer noise and tight enough to trip
 on a real regression, so a small numerical difference on your machine is expected rather
-than a broken clone. `docs/MODEL.md` explains the tolerances.
+than a broken clone.
+
+The tolerances are not uniform, and that is the part worth reading. Observable outputs —
+VaR and the spotlight correlations — drift under 0.51 percent across machines and are
+pinned at 1 percent. The DCC persistence `b` drifts up to **85 percent** on the same code
+and the same seed, because in low-persistence windows it sits on a flat likelihood ridge
+where the optimizer's stopping point is arbitrary and the correlation path it produces is
+stable regardless. Pinning it would produce constant failures that mean nothing, so it is
+guarded coarsely instead. **Test what the model determines, guard what it does not.**
+
+`docs/TESTING.md` has the measurements those choices were made from, the cross-machine
+stack table, how the 1 percent lock sits between the noise floor and the smallest real
+regression observed, and what this suite still does not cover.
 
 ## About the data
 
